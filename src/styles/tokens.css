@@ -1,0 +1,75 @@
+@theme {
+  --font-ui: "Patrick Hand", "Segoe UI", system-ui, sans-serif;
+  --font-hand: "Caveat", "Patrick Hand", cursive;
+  --font-body: "Literata Variable", Georgia, serif;
+  --font-mono: "JetBrains Mono", ui-monospace, monospace;
+}
+
+:root {
+  color-scheme: dark;
+
+  /* surfaces: dark chalkboard */
+  --bg: #14110f;
+  --bg-board: #181411;
+  --surface: #1d1915;
+  --surface-2: #26201a;
+  --surface-3: #312920;
+  --line: #4a3f33;
+  --line-soft: #352d25;
+
+  /* ink + paper */
+  --ink: #efe6d2;
+  --ink-dim: #b9ad96;
+  --ink-faint: #82776a;
+  --paper-ink: #2a241c;
+
+  /* accents (chalk, never neon) */
+  --amber: #d9a441;
+  --red: #c8553d;
+  --green: #86a873;
+  --blue: #6f9bb5;
+  --pink: #c98a9a;
+  --purple: #9c86b5;
+  --focus: #e8b94f;
+
+  /* card paper tones (muted) */
+  --card-paper: #ece3cf;
+  --card-yellow: #ecdc92;
+  --card-green: #cfdcb8;
+  --card-blue: #c1d4dd;
+  --card-pink: #edcacf;
+  --card-purple: #d6cbe1;
+  --card-dark: #2d2722;
+
+  --radius-sketch: 255px 14px 225px 14px / 14px 225px 14px 255px;
+  --radius-sketch-2: 14px 225px 14px 255px / 255px 14px 225px 14px;
+  --shadow-paper: 0 1px 0 rgb(255 255 255 / 0.25) inset, 0 2px 3px rgb(0 0 0 / 0.35), 0 10px 22px -8px rgb(0 0 0 / 0.55);
+  --shadow-lift: 0 1px 0 rgb(255 255 255 / 0.25) inset, 0 4px 6px rgb(0 0 0 / 0.35), 0 22px 36px -10px rgb(0 0 0 / 0.65);
+
+  --ease: cubic-bezier(0.22, 1, 0.36, 1);
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 24px;
+  --ui-size: 15px;
+
+  /* editor syntax colors (overridden on light paper cards) */
+  --hl-heading: #e8b94f; --hl-strong: #f6eedb; --hl-em: #d9cfba; --hl-link: #86b2cf; --hl-url: #6f9bb5;
+  --hl-string: #a9c68c; --hl-quote: #b9ad96; --hl-list: #c8553d; --hl-meta: #82776a; --hl-keyword: #e08e6a;
+  --hl-number: #d9a441; --hl-comment: #8c8070; --hl-type: #c9a6d8;
+}
+
+.paper-card:not([data-color="dark"]) {
+  --ink: #2a241c; --ink-faint: #7a6f5e;
+  --hl-heading: #8a5a12; --hl-strong: #1a140c; --hl-em: #3d3427; --hl-link: #2f6385; --hl-url: #2f6385;
+  --hl-string: #3f6b2a; --hl-quote: #5a4f3f; --hl-list: #a3402b; --hl-meta: #8a7d6a; --hl-keyword: #a8441f;
+  --hl-number: #8a5a12; --hl-comment: #7a6f5e; --hl-type: #6b4a8a;
+  --amber: #a87413;
+}
+
+:root[data-density="compact"] {
+  --space-2: 6px;
+  --space-3: 9px;
+  --space-4: 12px;
+}

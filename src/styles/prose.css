@@ -1,0 +1,39 @@
+/* Markdown preview: used in the preview pane and inside cards */
+.md-prose { font-family: var(--font-body); font-size: 0.98rem; line-height: 1.65; color: inherit; overflow-wrap: anywhere; }
+.md-prose > :first-child { margin-top: 0; }
+.md-prose > :last-child { margin-bottom: 0; }
+.md-prose h1, .md-prose h2, .md-prose h3, .md-prose h4 { font-family: var(--font-hand); font-weight: 700; line-height: 1.1; margin: 1.1em 0 0.4em; }
+.md-prose h1 { font-size: 2.3rem; }
+.md-prose h2 { font-size: 1.85rem; }
+.md-prose h3 { font-size: 1.5rem; }
+.md-prose h4 { font-size: 1.25rem; }
+.md-prose h1 { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 6' preserveAspectRatio='none'%3E%3Cpath d='M1 3.5 C14 1, 22 5.5, 36 3 S60 1.5, 72 4 S92 3, 99 2.5' fill='none' stroke='%23c8553d' stroke-width='1.6' stroke-linecap='round'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-size: 100% 6px; background-position: 0 100%; padding-bottom: 8px; }
+.md-prose p, .md-prose ul, .md-prose ol, .md-prose pre, .md-prose table, .md-prose blockquote { margin: 0.6em 0; }
+.md-prose a { color: var(--blue); text-decoration: underline wavy 1px; text-underline-offset: 3px; cursor: pointer; }
+.md-prose a.wikilink { color: #8a5a12; font-weight: 600; text-decoration-style: solid; background: rgb(217 164 65 / 0.18); padding: 0 4px; border-radius: 3px 5px 3px 5px; }
+.paper-card[data-color="dark"] .md-prose a.wikilink, .note-preview-wrap .md-prose a.wikilink { color: var(--amber); }
+.md-prose a.wikilink-missing { text-decoration: underline dashed; opacity: 0.75; background: transparent; }
+.md-prose blockquote { padding: 2px 14px; border-left: 4px double color-mix(in srgb, currentColor 40%, transparent); color: color-mix(in srgb, currentColor 78%, transparent); font-style: italic; }
+.md-prose code { font-family: var(--font-mono); font-size: 0.86em; padding: 1px 5px; border-radius: 4px; background: rgb(0 0 0 / 0.14); }
+.md-prose pre { padding: 12px 14px; overflow: auto; border-radius: 6px 10px 6px 10px; background: #231d17; color: #e9dfc8; border: 2px solid var(--line); }
+.md-prose pre code { background: none; padding: 0; color: inherit; font-size: 0.82rem; line-height: 1.55; }
+.md-prose img { max-width: 100%; height: auto; border-radius: 4px; border: 2px solid rgb(0 0 0 / 0.2); }
+.md-prose table { border-collapse: collapse; width: 100%; font-size: 0.92em; }
+.md-prose th, .md-prose td { padding: 5px 10px; border: 1.5px solid color-mix(in srgb, currentColor 30%, transparent); text-align: left; }
+.md-prose th { font-family: var(--font-hand); font-size: 1.15em; background: rgb(0 0 0 / 0.08); }
+.md-prose hr { border: 0; border-top: 3px dotted color-mix(in srgb, currentColor 35%, transparent); margin: 1.2em 0; }
+.md-prose ul.contains-task-list { list-style: none; padding-left: 0.4em; }
+.md-prose li.task-list-item { display: flex; gap: 8px; align-items: baseline; }
+.md-prose input[type="checkbox"] { appearance: none; width: 1.05em; height: 1.05em; flex: none; margin: 0; transform: translateY(0.18em) rotate(-2deg); border: 2px solid currentColor; border-radius: 3px 5px 3px 5px; position: relative; background: transparent; cursor: pointer; transition: background-color 0.12s; }
+.md-prose input[type="checkbox"]:disabled { cursor: default; opacity: 0.8; }
+.md-prose input[type="checkbox"]:checked::after { content: ""; position: absolute; left: 22%; top: -25%; width: 28%; height: 70%; border: solid var(--red); border-width: 0 3px 3px 0; transform: rotate(40deg); }
+.md-prose li.task-list-item:has(input:checked) { opacity: 0.65; text-decoration: line-through; text-decoration-style: wavy; text-decoration-thickness: 1px; }
+
+/* highlight.js tokens (warm chalk palette) */
+.hljs-keyword, .hljs-selector-tag, .hljs-built_in { color: #e08e6a; }
+.hljs-string, .hljs-attr, .hljs-template-variable { color: #a9c68c; }
+.hljs-number, .hljs-literal { color: #d9a441; }
+.hljs-comment, .hljs-quote { color: #8c8070; font-style: italic; }
+.hljs-title, .hljs-section, .hljs-name { color: #86b2cf; }
+.hljs-type, .hljs-class .hljs-title { color: #c9a6d8; }
+.hljs-meta, .hljs-symbol, .hljs-bullet { color: #d98ca0; }

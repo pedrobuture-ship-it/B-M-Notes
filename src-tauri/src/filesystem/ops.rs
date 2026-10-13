@@ -1,0 +1,401 @@
+//! Filesystem operations, all relative to an already validated workspace root.
+
+use super::paths::*;
+use serde::Serialize;
+use std::fs;
+use std::io::Write;
+use std::path::Path;
+use std::time::UNIX_EPOCH;
+
+#[derive(Serialize, Clone, Debug)]
+#[serde(rename_all = "camelCase")]
+pub struct TreeNode {
+    pub name: String,
+    pub path: String,
+    pub is_dir: bool,
+    pub children: Vec<TreeNode>,
+}
+
+#[derive(Serialize, Clone, Debug)]
+#[serde(rename_all = "camelCase")]
+pub struct NoteFile {
+    pub path: String,
+    pub content: String,
+    pub mtime: u64,
+}
+
+fn mtime_ms(p: &Path) -> u64 {
+    fs::metadata(p)
+        .and_then(|m| m.modified())
+        .ok()
+        .and_then(|t| t.duration_since(UNIX_EPOCH).ok())
+        .map(|d| d.as_millis() as u64)
+        .unwrap_or(0)
+}
+
+pub fn scan(root: &Path, ignored: &[String]) -> Result<Vec<TreeNode>, String> {
+    fn walk(root: &Path, dir: &Path, ignored: &[String], depth: usize) -> Result<Vec<TreeNode>, String> {
+        if depth > 32 {
+            return Ok(vec![]);
+        }
+        let mut nodes = Vec::new();
+        let entries = fs::read_dir(dir).map_err(|e| format!("{}: {e}", dir.display()))?;
+        for entry in entries.flatten() {
+            let name = entry.file_name().to_string_lossy().into_owned();
+            if is_ignored(&name, ignored) {
+                continue;
+            }
+            // Never follow symlinks: they could point outside the workspace.
+            let Ok(ft) = entry.file_type() else { continue };
+            if ft.is_symlink() {
+                continue;
+            }
+            let path = entry.path();
+            let Some(rel) = to_rel(root, &path) else { continue };
+            if ft.is_dir() {
+                // Hidden folders (e.g. .obsidian) are skipped.
+                if name.starts_with('.') {
+                    continue;
+                }
+                let children = walk(root, &path, ignored, depth + 1).unwrap_or_default();
+                nodes.push(TreeNode { name, path: rel, is_dir: true, children });
+            } else if ft.is_file() && is_markdown(&path) {
+                nodes.push(TreeNode { name, path: rel, is_dir: false, children: vec![] });
+            }
+        }
+        nodes.sort_by(|a, b| {
+            b.is_dir
+                .cmp(&a.is_dir)
+                .then_with(|| a.name.to_lowercase().cmp(&b.name.to_lowercase()))
+        });
+        Ok(nodes)
+    }
+    walk(root, root, ignored, 0)
+}
+
+pub fn read_all(root: &Path, ignored: &[String]) -> Result<Vec<NoteFile>, String> {
+    fn collect(nodes: &[TreeNode], out: &mut Vec<String>) {
+        for n in nodes {
+            if n.is_dir {
+                collect(&n.children, out)
+            } else {
+                out.push(n.path.clone())
+            }
+        }
+    }
+    let tree = scan(root, ignored)?;
+    let mut paths = Vec::new();
+    collect(&tree, &mut paths);
+    let mut out = Vec::with_capacity(paths.len());
+    for rel in paths {
+        let abs = root.join(&rel);
+        // Unreadable / non-UTF8 files are skipped rather than failing the whole load.
+        if let Ok(content) = fs::read_to_string(&abs) {
+            out.push(NoteFile { mtime: mtime_ms(&abs), path: rel, content });
+        }
+    }
+    Ok(out)
+}
+
+pub fn read_note(root: &Path, rel: &str) -> Result<NoteFile, String> {
+    let abs = safe_join(root, rel)?;
+    let content = fs::read_to_string(&abs).map_err(|e| format!("{rel}: {e}"))?;
+    Ok(NoteFile { path: rel.to_string(), mtime: mtime_ms(&abs), content })
+}
+
+/// Atomic write: temp file in the same dir, fsync, rename over the target.
+pub fn atomic_write(abs: &Path, content: &[u8]) -> Result<(), String> {
+    let dir = abs.parent().ok_or("Invalid path")?;
+    fs::create_dir_all(dir).map_err(|e| e.to_string())?;
+    let tmp = dir.join(format!(
+        ".{}.mural-tmp",
+        abs.file_name().and_then(|n| n.to_str()).unwrap_or("file")
+    ));
+    {
+        let mut f = fs::File::create(&tmp).map_err(|e| e.to_string())?;
+        f.write_all(content).map_err(|e| e.to_string())?;
+        f.sync_all().map_err(|e| e.to_string())?;
+    }
+    fs::rename(&tmp, abs).map_err(|e| {
+        let _ = fs::remove_file(&tmp);
+        e.to_string()
+    })
+}
+
+pub fn write_note(root: &Path, rel: &str, content: &str) -> Result<u64, String> {
+    if !is_markdown(Path::new(rel)) {
+        return Err("Only Markdown files can be written".into());
+    }
+    let abs = safe_join(root, rel)?;
+    atomic_write(&abs, content.as_bytes())?;
+    Ok(mtime_ms(&abs))
+}
+
+pub fn create_note(root: &Path, dir_rel: &str, stem: &str, content: &str) -> Result<String, String> {
+    let stem = validate_name(stem.trim_end_matches(".md"))?;
+    let dir = safe_join(root, dir_rel)?;
+    fs::create_dir_all(&dir).map_err(|e| e.to_string())?;
+    let file = unique_name(&dir, &stem, "md");
+    let abs = dir.join(&file);
+    fs::write(&abs, content).map_err(|e| e.to_string())?;
+    to_rel(root, &abs).ok_or_else(|| "Invalid path".into())
+}
+
+pub fn create_dir(root: &Path, parent_rel: &str, name: &str) -> Result<String, String> {
+    let name = validate_name(name)?;
+    let parent = safe_join(root, parent_rel)?;
+    let unique = unique_name(&parent, &name, "");
+    let abs = parent.join(unique);
+    fs::create_dir_all(&abs).map_err(|e| e.to_string())?;
+    to_rel(root, &abs).ok_or_else(|| "Invalid path".into())
+}
+
+pub fn rename(root: &Path, rel: &str, new_name: &str) -> Result<String, String> {
+    let abs = safe_join(root, rel)?;
+    if !abs.exists() {
+        return Err("Source does not exist".into());
+    }
+    let mut new_name = validate_name(new_name)?;
+    if abs.is_file() && is_markdown(&abs) && !is_markdown(Path::new(&new_name)) {
+        new_name.push_str(".md");
+    }
+    let parent = abs.parent().ok_or("Invalid path")?;
+    let target = parent.join(&new_name);
+    if target == abs {
+        return to_rel(root, &abs).ok_or_else(|| "Invalid path".into());
+    }
+    if target.exists() {
+        return Err(format!("\"{new_name}\" already exists"));
+    }
+    fs::rename(&abs, &target).map_err(|e| e.to_string())?;
+    to_rel(root, &target).ok_or_else(|| "Invalid path".into())
+}
+
+pub fn move_entry(root: &Path, rel: &str, new_parent_rel: &str) -> Result<String, String> {
+    let abs = safe_join(root, rel)?;
+    let parent = safe_join(root, new_parent_rel)?;
+    if !abs.exists() {
+        return Err("Source does not exist".into());
+    }
+    if !parent.is_dir() {
+        return Err("Destination is not a folder".into());
+    }
+    if parent.starts_with(&abs) {
+        return Err("Cannot move a folder into itself".into());
+    }
+    let name = abs.file_name().ok_or("Invalid path")?;
+    let target = parent.join(name);
+    if target == abs {
+        return to_rel(root, &abs).ok_or_else(|| "Invalid path".into());
+    }
+    if target.exists() {
+        return Err("Destination already contains an entry with that name".into());
+    }
+    fs::rename(&abs, &target).map_err(|e| e.to_string())?;
+    to_rel(root, &target).ok_or_else(|| "Invalid path".into())
+}
+
+pub fn delete_entry(root: &Path, rel: &str) -> Result<(), String> {
+    if rel.trim_matches('/').is_empty() {
+        return Err("Refusing to delete the workspace root".into());
+    }
+    let abs = safe_join(root, rel)?;
+    let meta = abs.symlink_metadata().map_err(|e| e.to_string())?;
+    if meta.is_dir() {
+        fs::remove_dir_all(&abs).map_err(|e| e.to_string())
+    } else {
+        fs::remove_file(&abs).map_err(|e| e.to_string())
+    }
+}
+
+/// Saves a pasted/dropped image into the assets folder with a safe unique name.
+pub fn save_asset(root: &Path, assets_dir: &str, file_name: &str, bytes: &[u8]) -> Result<String, String> {
+    let ext = Path::new(file_name)
+        .extension()
+        .and_then(|e| e.to_str())
+        .map(|e| e.to_ascii_lowercase())
+        .unwrap_or_default();
+    if !matches!(ext.as_str(), "png" | "jpg" | "jpeg" | "webp" | "gif") {
+        return Err("Unsupported image type".into());
+    }
+    let stem = Path::new(file_name)
+        .file_stem()
+        .and_then(|s| s.to_str())
+        .unwrap_or("image");
+    let safe_stem: String = stem
+        .chars()
+        .map(|c| if c.is_ascii_alphanumeric() || c == '-' || c == '_' { c } else { '-' })
+        .collect::<String>()
+        .trim_matches('-')
+        .to_string();
+    let safe_stem = if safe_stem.is_empty() { "image".to_string() } else { safe_stem };
+    let dir = safe_join(root, assets_dir)?;
+    fs::create_dir_all(&dir).map_err(|e| e.to_string())?;
+    let name = unique_name(&dir, &safe_stem, &ext);
+    let abs = dir.join(&name);
+    fs::write(&abs, bytes).map_err(|e| e.to_string())?;
+    to_rel(root, &abs).ok_or_else(|| "Invalid path".into())
+}
+
+// ----- .mural metadata -----------------------------------------------------
+
+const MAX_BACKUPS: usize = 8;
+
+const META_FILES: [&str; 3] = ["board.json", "settings.json", "board.corrupt.json"];
+
+/// `.mural/<file>` for a whitelisted metadata file; `.mural` itself may not be a symlink out of the workspace.
+fn meta_path(root: &Path, file: &str) -> Result<std::path::PathBuf, String> {
+    if !META_FILES.contains(&file) {
+        return Err("Unknown metadata file".into());
+    }
+    safe_join(root, &format!("{MURAL_DIR}/{file}"))
+}
+
+pub fn read_meta(root: &Path, file: &str) -> Result<Option<String>, String> {
+    let abs = meta_path(root, file)?;
+    match fs::read_to_string(&abs) {
+        Ok(s) => Ok(Some(s)),
+        Err(e) if e.kind() == std::io::ErrorKind::NotFound => Ok(None),
+        Err(e) => Err(e.to_string()),
+    }
+}
+
+/// Writes metadata, snapshotting the previous version first (board.json only).
+pub fn write_meta(root: &Path, file: &str, content: &str) -> Result<(), String> {
+    let target = meta_path(root, file)?;
+    let dir = target.parent().ok_or("Invalid path")?.to_path_buf();
+    fs::create_dir_all(&dir).map_err(|e| e.to_string())?;
+    if file == "board.json" && target.exists() {
+        snapshot(&dir, &target)?;
+    }
+    atomic_write(&target, content.as_bytes())
+}
+
+fn snapshot(dir: &Path, target: &Path) -> Result<(), String> {
+    let backups = dir.join("backups");
+    fs::create_dir_all(&backups).map_err(|e| e.to_string())?;
+    // At most one snapshot per 30 seconds so autosaves don't flush the history.
+    let mut existing: Vec<_> = fs::read_dir(&backups)
+        .map_err(|e| e.to_string())?
+        .flatten()
+        .filter(|e| e.file_name().to_string_lossy().starts_with("board-"))
+        .collect();
+    existing.sort_by_key(|e| e.file_name());
+    let now = std::time::SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .map(|d| d.as_secs())
+        .unwrap_or(0);
+    if let Some(last) = existing.last() {
+        let n = last.file_name().to_string_lossy().into_owned();
+        let ts: u64 = n.trim_start_matches("board-").trim_end_matches(".json").parse().unwrap_or(0);
+        if now.saturating_sub(ts) < 30 {
+            return Ok(());
+        }
+    }
+    // Don't snapshot a file that is already corrupt-looking/empty.
+    let current = fs::read_to_string(target).unwrap_or_default();
+    if serde_json::from_str::<serde_json::Value>(&current).is_err() {
+        return Ok(());
+    }
+    fs::write(backups.join(format!("board-{now}.json")), current).map_err(|e| e.to_string())?;
+    let mut all: Vec<_> = fs::read_dir(&backups)
+        .map_err(|e| e.to_string())?
+        .flatten()
+        .map(|e| e.path())
+        .collect();
+    all.sort();
+    while all.len() > MAX_BACKUPS {
+        let old = all.remove(0);
+        let _ = fs::remove_file(old);
+    }
+    Ok(())
+}
+
+/// Latest valid backup of board.json, used for recovery.
+pub fn latest_board_backup(root: &Path) -> Option<String> {
+    let backups = root.join(MURAL_DIR).join("backups");
+    let mut files: Vec<_> = fs::read_dir(backups).ok()?.flatten().map(|e| e.path()).collect();
+    files.sort();
+    files
+        .into_iter()
+        .rev()
+        .filter_map(|p| fs::read_to_string(p).ok())
+        .find(|s| serde_json::from_str::<serde_json::Value>(s).is_ok())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn setup() -> (tempfile::TempDir, std::path::PathBuf) {
+        let tmp = tempfile::tempdir().unwrap();
+        let root = tmp.path().canonicalize().unwrap();
+        (tmp, root)
+    }
+
+    #[test]
+    fn create_read_rename_delete_roundtrip() {
+        let (_t, root) = setup();
+        let rel = create_note(&root, "", "Minha ideia", "# oi").unwrap();
+        assert_eq!(rel, "Minha ideia.md");
+        let again = create_note(&root, "", "Minha ideia", "x").unwrap();
+        assert_eq!(again, "Minha ideia-2.md");
+        assert_eq!(read_note(&root, &rel).unwrap().content, "# oi");
+        let renamed = rename(&root, &rel, "nova").unwrap();
+        assert_eq!(renamed, "nova.md");
+        delete_entry(&root, &renamed).unwrap();
+        assert!(read_note(&root, &renamed).is_err());
+    }
+
+    #[test]
+    fn operations_cannot_escape_root() {
+        let (_t, root) = setup();
+        assert!(write_note(&root, "../evil.md", "x").is_err());
+        assert!(delete_entry(&root, "../x").is_err());
+        assert!(delete_entry(&root, "").is_err());
+        assert!(rename(&root, "a.md", "../b.md").is_err());
+    }
+
+    #[test]
+    fn move_into_self_is_rejected() {
+        let (_t, root) = setup();
+        create_dir(&root, "", "a").unwrap();
+        create_dir(&root, "a", "b").unwrap();
+        assert!(move_entry(&root, "a", "a/b").is_err());
+    }
+
+    #[test]
+    fn scan_skips_ignored_and_non_markdown() {
+        let (_t, root) = setup();
+        fs::create_dir_all(root.join("node_modules")).unwrap();
+        fs::write(root.join("node_modules/x.md"), "").unwrap();
+        fs::write(root.join("a.md"), "").unwrap();
+        fs::write(root.join("b.txt"), "").unwrap();
+        fs::create_dir_all(root.join("sub")).unwrap();
+        fs::write(root.join("sub/c.md"), "").unwrap();
+        let tree = scan(&root, &[]).unwrap();
+        let names: Vec<_> = tree.iter().map(|n| n.name.as_str()).collect();
+        assert_eq!(names, vec!["sub", "a.md"]);
+    }
+
+    #[test]
+    fn board_backup_and_recovery() {
+        let (_t, root) = setup();
+        write_meta(&root, "board.json", "{\"v\":1}").unwrap();
+        write_meta(&root, "board.json", "{\"v\":2}").unwrap();
+        assert_eq!(latest_board_backup(&root).unwrap(), "{\"v\":1}");
+        assert!(write_meta(&root, "../evil.json", "x").is_err());
+        assert!(read_meta(&root, "../../etc/passwd").is_err());
+    }
+
+    #[test]
+    fn assets_get_safe_unique_names() {
+        let (_t, root) = setup();
+        let a = save_asset(&root, "assets", "My Shot!.PNG", b"1").unwrap();
+        let b = save_asset(&root, "assets", "My Shot!.PNG", b"2").unwrap();
+        assert_eq!(a, "assets/My-Shot.png");
+        assert_eq!(b, "assets/My-Shot-2.png");
+        assert!(save_asset(&root, "assets", "x.exe", b"1").is_err());
+        assert!(save_asset(&root, "../out", "x.png", b"1").is_err());
+    }
+}

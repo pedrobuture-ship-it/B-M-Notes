@@ -1,0 +1,153 @@
+import { useState, type ReactNode } from "react";
+import { Dialog } from "@/components/Dialogs";
+import { useSettings } from "@/stores/settings";
+import { useUi } from "@/stores/ui";
+import { useWorkspace } from "@/stores/workspace";
+import { SHORTCUTS } from "@/lib/shortcuts";
+import { ipc } from "@/lib/ipc";
+import { LogoMark } from "@/components/doodles";
+
+function Toggle({ checked, onChange, label }: { checked: boolean; onChange: (v: boolean) => void; label: string }) {
+  return <button role="switch" aria-checked={checked} aria-label={label} className="toggle" onClick={() => onChange(!checked)} />;
+}
+
+function Row({ title, hint, children }: { title: string; hint?: string; children: ReactNode }) {
+  return (
+    <div className="setting-row">
+      <div><div>{title}</div>{hint && <small>{hint}</small>}</div>
+      {children}
+    </div>
+  );
+}
+
+function NumberField({ value, min, max, step = 1, onChange, label }: { value: number; min: number; max: number; step?: number; onChange: (n: number) => void; label: string }) {
+  return <input className="field" style={{ width: 90 }} type="number" aria-label={label} value={value} min={min} max={max} step={step} onChange={(e) => { const n = Number(e.target.value); if (Number.isFinite(n)) onChange(n); }} />;
+}
+
+export function ShortcutsList() {
+  const groups = ["General", "Mural", "Editor"] as const;
+  return (
+    <div className="overflow-auto px-5 pb-5" style={{ maxHeight: "60vh" }}>
+      {groups.map((g) => (
+        <div key={g} className="mb-3">
+          <div className="handwritten-label" style={{ fontSize: "1.4rem" }}>{g}</div>
+          {SHORTCUTS.filter((s) => s.group === g).map((s) => (
+            <div key={s.keys + s.label} className="shortcut-row">
+              <span>{s.label}</span>
+              <span className="kbd">{s.keys}</span>
+            </div>
+          ))}
+        </div>
+      ))}
+    </div>
+  );
+}
+
+export function ShortcutsDialog() {
+  const setDialog = useUi((s) => s.setDialog);
+  return (
+    <Dialog title="Keyboard shortcuts" onClose={() => setDialog(null)} width={600}>
+      <ShortcutsList />
+    </Dialog>
+  );
+}
+
+const SECTIONS = ["Appearance", "Editor", "Files", "Daily Notes", "Board", "Keyboard"] as const;
+
+export function SettingsDialog() {
+  const setDialog = useUi((s) => s.setDialog);
+  const { settings, update } = useSettings();
+  const [section, setSection] = useState<(typeof SECTIONS)[number]>("Appearance");
+  const [ignored, setIgnored] = useState(settings.files.ignoredFolders.join(", "));
+
+  return (
+    <Dialog title="Settings" onClose={() => setDialog(null)} width={720}>
+      <div className="settings-grid">
+        <nav className="settings-nav" aria-label="Settings sections">
+          {SECTIONS.map((s) => (
+            <button key={s} className="tab" style={{ flexDirection: "row", justifyContent: "flex-start", padding: "6px 10px" }} aria-selected={section === s} onClick={() => setSection(s)}>{s}</button>
+          ))}
+        </nav>
+        <div className="settings-pane">
+          {section === "Appearance" && (
+            <>
+              <Row title="Theme" hint="Light mode is planned for later."><span className="chip" data-active="true">Dark</span></Row>
+              <Row title="Card density">
+                <div className="segmented">
+                  {(["cozy", "compact"] as const).map((d) => (
+                    <button key={d} aria-pressed={settings.appearance.density === d} onClick={() => update((s) => ({ ...s, appearance: { ...s.appearance, density: d } }))}>{d}</button>
+                  ))}
+                </div>
+              </Row>
+              <Row title="Interface font size"><NumberField label="Interface font size" value={settings.appearance.fontSize} min={12} max={22} onChange={(n) => update((s) => ({ ...s, appearance: { ...s.appearance, fontSize: n } }))} /></Row>
+            </>
+          )}
+          {section === "Editor" && (
+            <>
+              <Row title="Line numbers"><Toggle label="Line numbers" checked={settings.editor.lineNumbers} onChange={(v) => update((s) => ({ ...s, editor: { ...s.editor, lineNumbers: v } }))} /></Row>
+              <Row title="Word wrap"><Toggle label="Word wrap" checked={settings.editor.wordWrap} onChange={(v) => update((s) => ({ ...s, editor: { ...s.editor, wordWrap: v } }))} /></Row>
+              <Row title="Editor font size"><NumberField label="Editor font size" value={settings.editor.fontSize} min={11} max={26} onChange={(n) => update((s) => ({ ...s, editor: { ...s.editor, fontSize: n } }))} /></Row>
+              <Row title="Autosave delay" hint="Milliseconds after you stop typing (200–5000)."><NumberField label="Autosave delay" value={settings.editor.autosaveDelay} min={200} max={5000} step={100} onChange={(n) => update((s) => ({ ...s, editor: { ...s.editor, autosaveDelay: n } }))} /></Row>
+            </>
+          )}
+          {section === "Files" && (
+            <>
+              <Row title="Assets folder" hint="Pasted and dropped images are copied here.">
+                <input className="field" style={{ width: 180 }} aria-label="Assets folder" defaultValue={settings.files.assetsFolder} onBlur={(e) => update((s) => ({ ...s, files: { ...s.files, assetsFolder: e.target.value } }))} />
+              </Row>
+              <Row title="Ignored folders" hint="Comma separated. node_modules, .git and .mural are always ignored.">
+                <input
+                  className="field"
+                  style={{ width: 220 }}
+                  aria-label="Ignored folders"
+                  value={ignored}
+                  onChange={(e) => setIgnored(e.target.value)}
+                  onBlur={() => {
+                    update((s) => ({ ...s, files: { ...s.files, ignoredFolders: ignored.split(",").map((x) => x.trim()).filter(Boolean) } }));
+                    void useWorkspace.getState().syncWithDisk();
+                  }}
+                />
+              </Row>
+            </>
+          )}
+          {section === "Daily Notes" && (
+            <Row title="Daily notes folder" hint="New daily notes are created as YYYY-MM-DD.md here.">
+              <input className="field" style={{ width: 180 }} aria-label="Daily notes folder" defaultValue={settings.files.dailyFolder} onBlur={(e) => update((s) => ({ ...s, files: { ...s.files, dailyFolder: e.target.value } }))} />
+            </Row>
+          )}
+          {section === "Board" && (
+            <>
+              <Row title="Dotted grid"><Toggle label="Dotted grid" checked={settings.board.grid} onChange={(v) => update((s) => ({ ...s, board: { ...s.board, grid: v } }))} /></Row>
+              <Row title="Snap to grid"><Toggle label="Snap to grid" checked={settings.board.snap} onChange={(v) => update((s) => ({ ...s, board: { ...s.board, snap: v } }))} /></Row>
+              <Row title="Show connections" hint="Lines drawn from [[wiki links]] and manual links."><Toggle label="Show connections" checked={settings.board.showConnections} onChange={(v) => update((s) => ({ ...s, board: { ...s.board, showConnections: v } }))} /></Row>
+            </>
+          )}
+          {section === "Keyboard" && <div style={{ margin: "-18px -22px" }}><ShortcutsList /></div>}
+        </div>
+      </div>
+      <div className="px-5 py-3" style={{ borderTop: "2px dashed var(--line-soft)", color: "var(--ink-faint)" }}>
+        Saved to <span className="kbd">.mural/settings.json</span> inside your workspace.
+      </div>
+    </Dialog>
+  );
+}
+
+export function AboutDialog() {
+  const setDialog = useUi((s) => s.setDialog);
+  const root = useWorkspace((s) => s.info?.root);
+  return (
+    <Dialog title="About buturenotes" onClose={() => setDialog(null)} width={500}>
+      <div className="px-5 pb-5 flex flex-col gap-3 selectable">
+        <div className="flex items-center gap-3"><LogoMark width={46} height={46} /><div><div className="handwritten-label" style={{ fontSize: "1.9rem" }}>buturenotes</div><div style={{ color: "var(--ink-dim)" }}>Version 0.1.0 — a local-first spatial Markdown workspace.</div></div></div>
+        <p className="m-0 handwritten-label" style={{ fontSize: "1.5rem", color: "var(--ink)" }}>Your notes are just files.</p>
+        <div className="shortcut-row"><span>Data model</span><span>Plain Markdown + local assets.</span></div>
+        <div className="shortcut-row"><span>Mural metadata</span><span className="kbd">.mural/</span></div>
+        <div className="shortcut-row"><span>Network</span><span>None. No account, no cloud.</span></div>
+        {root && <div className="shortcut-row"><span>Workspace</span><span className="truncate" style={{ maxWidth: 300 }} title={root}>{root}</span></div>}
+        <div className="flex justify-end">
+          <button className="btn" onClick={() => void ipc.reveal("").catch(() => {})}>Reveal workspace in filesystem</button>
+        </div>
+      </div>
+    </Dialog>
+  );
+}
