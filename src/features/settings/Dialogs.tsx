@@ -1,10 +1,10 @@
-import { useState, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { Dialog } from "@/components/Dialogs";
 import { useSettings } from "@/stores/settings";
 import { useUi } from "@/stores/ui";
 import { useWorkspace } from "@/stores/workspace";
 import { SHORTCUTS } from "@/lib/shortcuts";
-import { ipc } from "@/lib/ipc";
+import { ipc, type GithubDevice, type GithubUser } from "@/lib/ipc";
 import { LogoMark } from "@/components/doodles";
 
 function Toggle({ checked, onChange, label }: { checked: boolean; onChange: (v: boolean) => void; label: string }) {
@@ -52,7 +52,78 @@ export function ShortcutsDialog() {
   );
 }
 
-const SECTIONS = ["Appearance", "Editor", "Files", "Daily Notes", "Board", "Keyboard"] as const;
+/** Optional GitHub sign-in (device flow). Nothing is contacted until the user clicks Connect. */
+function GithubConnect() {
+  const [user, setUser] = useState<GithubUser | null>(null);
+  const [checking, setChecking] = useState(true);
+  const [device, setDevice] = useState<GithubDevice | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const run = useRef(0);
+
+  useEffect(() => {
+    ipc.githubStatus().then(setUser).catch(() => {}).finally(() => setChecking(false));
+    return () => { run.current++; };
+  }, []);
+
+  const cancel = () => { run.current++; setDevice(null); };
+
+  const connect = async () => {
+    const my = ++run.current;
+    setError(null);
+    try {
+      const d = await ipc.githubLoginStart();
+      if (run.current !== my) return;
+      setDevice(d);
+      void ipc.openExternal(d.verificationUri).catch(() => {});
+      let wait = d.interval;
+      const deadline = Date.now() + d.expiresIn * 1000;
+      while (run.current === my && Date.now() < deadline) {
+        await new Promise((r) => setTimeout(r, wait * 1000));
+        if (run.current !== my) return;
+        const r = await ipc.githubLoginPoll(d.deviceCode);
+        if (r.status === "done") {
+          setUser(await ipc.githubStatus());
+          setDevice(null);
+          return;
+        }
+        if (r.status === "slow_down") wait += 5;
+      }
+      if (run.current === my) throw new Error("The code expired. Start again.");
+    } catch (e) {
+      if (run.current === my) { setDevice(null); setError(e instanceof Error ? e.message : "Could not connect"); }
+    }
+  };
+
+  const disconnect = async () => {
+    await ipc.githubLogout().catch(() => {});
+    setUser(null);
+  };
+
+  if (checking) return null;
+  return (
+    <>
+      <Row title="GitHub" hint="Optional. Sign in to sync this folder with a repository. Off until you connect.">
+        {user ? (
+          <div className="flex items-center gap-2"><span className="chip" data-active="true">@{user.login}</span><button className="btn" onClick={() => void disconnect()}>Disconnect</button></div>
+        ) : device ? (
+          <button className="btn" onClick={cancel}>Cancel</button>
+        ) : (
+          <button className="btn btn-primary" onClick={() => void connect()}>Connect to GitHub</button>
+        )}
+      </Row>
+      {device && (
+        <div className="paper-card" style={{ padding: "14px 18px", margin: "6px 0 12px" }}>
+          <div>Enter this code at <a href={device.verificationUri} onClick={(e) => { e.preventDefault(); void ipc.openExternal(device.verificationUri); }}>{device.verificationUri}</a>:</div>
+          <div className="handwritten-label" style={{ fontSize: "2.2rem", letterSpacing: "0.12em", userSelect: "all" }}>{device.userCode}</div>
+          <small>Waiting for you to authorize in the browser…</small>
+        </div>
+      )}
+      {error && <p role="alert" style={{ color: "var(--red)", fontWeight: 700 }}>{error}</p>}
+    </>
+  );
+}
+
+const SECTIONS = ["Appearance", "Editor", "Files", "Daily Notes", "Board", "Sync", "Keyboard"] as const;
 
 export function SettingsDialog() {
   const setDialog = useUi((s) => s.setDialog);
@@ -128,6 +199,7 @@ export function SettingsDialog() {
               <Row title="Show connections" hint="Lines drawn from [[wiki links]] and manual links."><Toggle label="Show connections" checked={settings.board.showConnections} onChange={(v) => update((s) => ({ ...s, board: { ...s.board, showConnections: v } }))} /></Row>
             </>
           )}
+          {section === "Sync" && <GithubConnect />}
           {section === "Keyboard" && <div style={{ margin: "-18px -22px" }}><ShortcutsList /></div>}
         </div>
       </div>

@@ -10,6 +10,19 @@ export interface FsChange {
   structure: boolean;
 }
 
+export interface GithubDevice {
+  deviceCode: string;
+  userCode: string;
+  verificationUri: string;
+  interval: number;
+  expiresIn: number;
+}
+
+export interface GithubUser {
+  login: string;
+  name: string | null;
+}
+
 export interface MetaRead {
   content: string | null;
   backup: string | null;
@@ -54,6 +67,10 @@ export const ipc = {
     await navigator.clipboard.writeText(await call<string>("absolute_path", { path }));
   },
   openExternal: (url: string) => openUrl(url),
+  githubLoginStart: () => call<GithubDevice>("github_login_start"),
+  githubLoginPoll: (deviceCode: string) => call<{ status: "pending" | "slow_down" | "done"; login: string | null }>("github_login_poll", { deviceCode }),
+  githubStatus: () => call<GithubUser | null>("github_status"),
+  githubLogout: () => call<void>("github_logout"),
   onFsChange: (cb: (c: FsChange) => void): Promise<UnlistenFn> => listen<FsChange>("fs-change", (e) => cb(e.payload)),
 };
 

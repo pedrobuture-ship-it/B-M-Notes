@@ -1,5 +1,6 @@
 mod commands;
 mod filesystem;
+mod github;
 mod watcher;
 
 use filesystem::{paths, AppState};
@@ -72,6 +73,10 @@ pub fn run() {
             commands::read_meta,
             commands::write_meta,
             commands::launch_path,
+            github::github_login_start,
+            github::github_login_poll,
+            github::github_status,
+            github::github_logout,
         ])
         .run(tauri::generate_context!())
         .expect("error while running buturenotes");
