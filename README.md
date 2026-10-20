@@ -5,40 +5,64 @@
 > Your notes are just files.
 
 Pick a folder of `.md` files and b&m notes spreads them out as cards on an infinite, hand-drawn wall.
-No account, no cloud, no lock-in — everything is plain Markdown on your disk.
+Everything is plain Markdown on your disk. It works offline, and goes online only when you ask it to:
+sync with GitHub to share a folder, or check for updates.
 
 ![The mural](docs/screenshots/mural.png)
 
 ## Highlights
 
-- **No account, no cloud, no lock-in** — it never touches the network.
-- **Plain Markdown** — the `.md` files are the single source of truth. Edit them in VS Code or Obsidian at the same time.
-- **Infinite canvas** — pan, zoom, minimap, multi-select, resizable cards, dashed frames, hand-drawn links.
-- **Wiki links** (`[[note]]`, `[[folder/note|alias]]`) become sketchy arrows between cards, with optional labels.
-- **Backlinks**, **tags** (`#idea`), **daily notes**, **interactive checkboxes** that edit the real file.
-- **Local search** across file names, titles, tags and content (Ctrl+P), plus a **command palette** (Ctrl+K).
-- **Graph view** of every note and link.
-- **Smart rename**: renaming or moving a note shows how many `[[links]]` in other notes would break and offers to update them.
-- **Trash**: deleting moves notes to `.mural/trash/`; restore them or empty the trash from the sidebar. Retention is configurable (default 30 days).
-- **Several murals per folder**: "Main" shows every note; extra murals hold only the notes you add (Delete there never touches files).
-- **Writing**: templates (`templates/` folder + built-ins), `![[embeds]]`, `[[note#Section]]` links, autocomplete after `[[` and `#`, unlinked mentions, a global Tasks view.
-- **Finding things**: saved searches, filters (`tag:`, `path:`, `title:`, any frontmatter property like `status:done`), back/forward (`Alt+←/→`), pinned and recent notes, a Properties table.
-- **Quality & safety**: rename also fixes `[text](note.md)` links, local ZIP backups (optional daily), a notes-health check (broken links, orphans), rebindable shortcuts, password-encrypted notes (AES-GCM).
-- **More on the mural**: magnetic alignment guides, align/distribute buttons, task progress on cards (`☑ 3/5`), a **Timeline** view, a **mind map** of a note's headings, export a mural as a standalone **HTML page**, and full keyboard navigation (arrows, Enter, Shift+arrows).
-- **More in notes**: `mermaid` diagrams, `$LaTeX$` maths, a grid **table editor** (Ctrl+Alt+T), PDF and audio attachments, **audio recording**, `@2026-11-01` dates with a **Calendar** and due reminders.
-- **Working together** (with the optional sync): "who is on this note", a warning when the remote changed the note you opened, and files you can keep private on your computer.
-- **Focus mode** (Ctrl+Shift+F), **Portuguese (Brasil)** and English, rebindable shortcuts, optional **update check**, and simple sandboxed **plugins**.
-- **Light and dark** themes, plus optional **GitHub sync** for sharing a folder.
-- Paste or drop images: they are copied to `assets/` and referenced as normal Markdown.
+### The mural
+- **Infinite canvas**: pan, zoom, minimap, multi-select, resizable cards, dashed frames, light and dark (parchment) themes.
+- **Linking by dragging**: every card has a dot on each side. Drag from one card to another and the `[[link]]` is written into the source note for you. Select an arrow and press **Delete** to remove it, and its `[[link]]` disappears from the `.md` too.
+- **Wiki links** (`[[note]]`, `[[folder/note|alias]]`, `[[note#Section]]`) become hand-drawn arrows, with optional labels.
+- **Several murals per folder**: "Main" shows every note; extra murals hold only the notes you add. Right-click a card → *Add to mural*. Delete on an extra mural only removes the card, never the file.
+- **Layout help**: magnetic alignment guides, align/distribute buttons, task progress on cards (`☑ 3/5`), full keyboard navigation (arrows, Enter, Shift+arrows).
+- **Other views**: a **Graph** of every note and link, a **Timeline**, a **mind map** of a note's headings, and export of a mural as a standalone **HTML page**.
+
+### Writing
+- **Plain Markdown** is the single source of truth: edit the same files in VS Code or Obsidian at the same time.
+- Templates (`templates/` folder + built-ins), `![[embeds]]`, autocomplete after `[[` and `#`, unlinked mentions, backlinks, tags (`#idea`), daily notes.
+- Interactive checkboxes that edit the real file, a global **Tasks** view, `@2026-11-01` dates with a **Calendar** and due reminders.
+- `mermaid` diagrams, `$LaTeX$` maths, a grid **table editor** (Ctrl+Alt+T).
+- Paste or drop images, PDFs and audio: they are copied to `assets/` and linked as normal Markdown. You can also **record audio** straight into a note.
+- **Focus mode** (Ctrl+Shift+F) hides everything but what you are working on; Esc leaves it.
+
+### Finding things
+- Search across names, titles, tags and content (Ctrl+P), with filters (`tag:`, `path:`, `title:`, any frontmatter property like `status:done`) and **saved searches**.
+- Command palette (Ctrl+K), back/forward (`Alt+←/→`), pinned and recent notes, a Properties table.
+
+### Safety
+- **Smart rename**: renaming or moving a note updates `[[links]]` and `[text](note.md)` links in every other note.
+- **Trash**: deleting moves notes to `.mural/trash/`; restore them from the sidebar. Retention is configurable (default 30 days).
+- Local **ZIP backups** (optional daily), a **notes-health** check (broken links, orphans), **password-encrypted notes** (AES-GCM).
+- If one view breaks, it shows the error with *Try again* / *Back to the mural* instead of blanking the window.
+
+### Working together (optional)
+- **GitHub sync** to share a folder with a friend, see below.
+- "Who is on this note right now", a warning when the remote changed the note you opened, and files you keep private on your computer.
+
+### And
+- English and **Português (Brasil)**, rebindable shortcuts, optional **update check**, simple sandboxed **plugins**.
 
 | Note page | Graph | Card menu |
 |---|---|---|
 | ![](docs/screenshots/note.png) | ![](docs/screenshots/graph.png) | ![](docs/screenshots/card-menu.png) |
 
-## Stack
+## Online only when you want
 
-React 19 · TypeScript (strict) · Vite · Tailwind CSS v4 · Zustand · XYFlow / React Flow (canvas) · CodeMirror 6 (editor) ·
-unified/remark/rehype + highlight.js (preview) · Tauri 2 · Rust (`notify` for the watcher).
+b&m notes needs no account and no server. With nothing turned on, it makes **no network calls**: no telemetry,
+no analytics, strict CSP, and every library (mermaid, KaTeX, fonts) ships inside the app.
+
+The app goes online only for things you switch on yourself:
+
+| Feature | Talks to | When |
+|---|---|---|
+| GitHub sync | `github.com` (via `git`) | After you connect an account and pick a repository |
+| Presence ("who is on this note") | your sync repository | Only while sync is on, and it can be turned off |
+| Update check | GitHub releases API | When you click *Check now*, or daily if you opt in |
+
+Turn sync off (Settings → Sync → Unlink) and the app is fully offline again. Nothing is deleted.
 
 ## Your data
 
@@ -46,31 +70,35 @@ unified/remark/rehype + highlight.js (preview) · Tauri 2 · Rust (`notify` for 
 MyVault/
   ideas.md
   projects/app.md
-  assets/            <- pasted / dropped images
+  assets/            <- pasted / dropped images, PDFs, audio
   daily/2026-10-13.md
-  .mural/            <- the ONLY buturenotes-specific data
-    board.json       <- card positions, sizes, colors, frames, manual links, viewport
-    settings.json    <- workspace preferences
-    backups/         <- a few snapshots of board.json
+  .mural/            <- the ONLY app-specific data
+    board.json       <- Main mural: card positions, sizes, colors, frames, viewport
+    boards.json      <- list of extra murals
+    boards/<id>.json <- each extra mural
+    settings.json    <- workspace preferences (never synced)
+    trash/           <- deleted notes, until restored or expired (never synced)
+    backups/         <- snapshots and ZIP backups (never synced)
+    plugins/         <- your plugins (never synced)
 ```
 
 - Visual information is **never** written into your Markdown.
 - `.mural/` is created lazily, only when there is something to save.
 - Deleting `.mural/` loses layout only; your notes are untouched.
-- If `board.json` is corrupted, buturenotes keeps the broken file as `board.corrupt.json`, restores the newest valid
+- If `board.json` is corrupted, the app keeps the broken file as `board.corrupt.json`, restores the newest valid
   backup (or lays the board out again) and never touches a `.md`.
 
 ## Privacy & safety
 
-- Fully offline by default: no telemetry, strict CSP. The only network use is the optional GitHub sync below, which you turn on yourself.
 - Every filesystem command validates paths against the opened workspace (no `..`, no absolute paths, no
   symlink escapes), writes are atomic (temp file + rename), and deleting always asks first.
 - External edits are picked up live by the watcher. If a note has unsaved local edits when the file changes on
   disk, you get a banner to keep yours or load the disk version.
+- Encrypted notes use AES-GCM with a PBKDF2 key (600k iterations). The password stays in memory only; a lost password cannot be recovered.
 
 ## Sync with GitHub (optional)
 
-Off by default: without it the app makes no network calls. To share a folder with a friend:
+To share a folder with a friend:
 
 1. **Settings → Sync → Connect to GitHub.** Your browser opens GitHub; paste the short code shown in the app. The token is kept in the app's config folder (permissions `0600`), never inside your notes.
 2. **Pick a repository:** create a new one (private by default), choose an existing one, or paste `owner/name`. Your friend does the same with the same repository (they need write access).
@@ -80,23 +108,25 @@ How conflicts are handled:
 
 - Different notes, or different lines of the same note, merge automatically (it is plain `git`).
 - If you both changed the same lines, the note shows up under **Settings → Sync → Changed on both sides**: *Keep mine*, *Keep theirs*, or *Keep both* (the other version is saved as `note (from other).md`). Nothing is lost.
-- `.mural/board.json` merges per card, so moving different cards never conflicts; the viewport is local.
-- `.mural/settings.json`, backups and `sync.json` are never uploaded (added to `.gitignore`).
+- Murals (`board.json`, `boards/`) merge per card, so moving different cards never conflicts; the viewport is local.
+- Settings, trash, backups and plugins are never uploaded (added to `.gitignore`).
+- **Private files**: mark a note as private and it stays only on your computer. Making an already-shared file private removes it from your friend's copy on the next sync, so the app asks first.
 
-Requirements: `git` installed. Unlinking (Settings → Sync) stops syncing and deletes nothing. Large files (> 10 MB) trigger a warning because they make the repository heavy.
-
-## Releases
-
-Push a tag such as `v0.2.0` and the **Release** workflow (`.github/workflows/release.yml`) builds `.AppImage`, `.deb`, `.rpm`, `.msi`/`.exe` and `.dmg` and attaches them to a draft GitHub release. `CI` runs type-check, lint and all tests on every push. The builds are not code-signed yet, so Windows and macOS ask for confirmation on first launch. In **Settings → Updates** you can check for a newer version (nothing is sent unless you click or opt in).
+Requirements: `git` installed. Large files (> 10 MB) trigger a warning because they make the repository heavy.
 
 ## Plugins
 
-A plugin is a `.js` file in `.mural/plugins/` (never synced). It runs in an isolated Web Worker: no network, no DOM, no access to your files except the small `bm` API (`bm.command`, `bm.notes.list/read/write/create`, `bm.toast`, `bm.openNote`, `bm.prompt`). Every file must be approved in **Settings → Plugins** after you read its code, and editing it asks again. A command that runs longer than 10 s is stopped.
+A plugin is a `.js` file in `.mural/plugins/` (never synced). It runs in an isolated Web Worker: no network, no DOM, no access to your files except the small `bm` API (`bm.command`, `bm.notes.list/read/write/create`, `bm.toast`, `bm.openNote`, `bm.prompt`). Every file must be approved in **Settings → Plugins** after you read its code, and editing it asks again. A command that runs longer than 10 s is stopped. This is a sandbox, not a hard security boundary: only approve code you trust.
+
+## Releases
+
+Push a tag such as `v0.2.0` and the **Release** workflow (`.github/workflows/release.yml`) builds `.AppImage`, `.deb`, `.rpm`, `.msi`/`.exe` and `.dmg` and attaches them to a draft GitHub release. `CI` runs type-check, lint and all tests on every push. The builds are not code-signed yet, so Windows and macOS ask for confirmation on first launch.
 
 ## Install / run from source
 
-There are no published binaries yet: you build buturenotes yourself (about 3-5 minutes the first time).
+There are no published binaries yet: you build the app yourself (about 3-5 minutes the first time).
 Everything below needs **Node 20+**, **Rust (stable)** and the system WebView libraries for your OS.
+The binary and package are still called `buturenotes` internally.
 
 ```bash
 git clone https://github.com/pedrobuture-ship-it/buturenotes.git
@@ -160,10 +190,8 @@ npm install
 npm run tauri dev            # run the desktop app with hot reload
 npm run tauri dev -- -- /path/to/folder   # open a folder directly (or: buturenotes /path/to/folder)
 npm run check                # typecheck + lint + frontend tests
-(cd src-tauri && cargo test) # Rust tests (paths, symlinks, atomic writes, backups)
+(cd src-tauri && cargo test) # Rust tests (paths, symlinks, atomic writes, trash, backups, sync)
 ```
-
-The binary also accepts a folder as its first argument: `buturenotes ~/Notes`.
 
 ## Build
 
@@ -174,55 +202,69 @@ npm run tauri build -- --no-bundle  # just the optimized binary
 
 Cross-platform builds must be run on each target OS (or in CI).
 
+## Stack
+
+React 19 · TypeScript (strict) · Vite · Tailwind CSS v4 · Zustand · XYFlow / React Flow (canvas) · CodeMirror 6 (editor) ·
+unified/remark/rehype + highlight.js, KaTeX, mermaid (preview) · Tauri 2 · Rust (`notify` watcher, `git` CLI for sync, `zip` for backups).
+
 ## Architecture
 
 ```
 src/
   app/          App shell
-  components/   Menu, dialogs, doodles (SVG), VirtualList
+  components/   Menu, dialogs, error boundary, doodles (SVG), VirtualList
   features/
-    board/      canvas, note/frame nodes, sketch edges
+    board/      canvas, mural tabs, note/frame nodes, sketch edges
     editor/     CodeMirror editor, Markdown preview, note page
     sidebar/    notes, tags, file tree (virtualized), explore
     graph/      graph explorer
+    timeline/   timeline view
     search/     global search + command palette
-    settings/   settings, shortcuts, about
-    onboarding/ first run + create workspace
-  lib/          pure logic (wiki links, tags, checkboxes, index, search, markdown, board schema) + tests
-  stores/       zustand: workspace (notes, saves, watcher), board, settings, ui
+    settings/   settings, sync, backups, updates, plugins, shortcuts
+    shell/      header and background hooks (auto sync, backup, presence, reminders)
+    ...         trash, tasks, templates, calendar, tables, audio, mind map, health, properties
+  lib/          pure logic (links, rename, tags, tasks, search, markdown, crypto, i18n, plugins) + tests
+  stores/       zustand: workspace, board, settings, ui, sync, locks, plugins
   styles/       design system (tokens, paper-card, sketch-border, board-frame, sticky-note…)
 src-tauri/src/
-  filesystem/   safe paths + operations (+ tests)
+  filesystem/   safe paths, operations, trash (+ tests)
   commands/     the IPC surface
   watcher/      debounced notify watcher, ignores our own saves by content hash
+  github/       browser login (device flow), token file
+  sync/         git sync, board merge, presence, private files (+ tests)
+  backup.rs     ZIP backups
+  update.rs     update check
 ```
 
-Performance notes: the note index (titles, tags, links, backlinks) is built once and updated incrementally per
+Performance notes: notes are read in parallel at startup; the note index (titles, tags, links, backlinks) is built once and updated incrementally per
 edited note; Markdown rendering is cached; the canvas only renders cards in view and switches to a labelled
-low-detail card when zoomed far out; long lists are windowed. Tested with 3,000 notes.
+low-detail card when zoomed far out; long lists are windowed. Tested with 5,000 notes.
 
 ## Keyboard shortcuts
 
-Press **Ctrl + /** in the app for the full list.
+Press **Ctrl + /** in the app for the full list. App shortcuts can be changed in Settings.
 
 | Shortcut | Action |
 |---|---|
 | Ctrl + K | Command palette |
 | Ctrl + P | Search notes |
 | Ctrl + N | New note |
+| Ctrl + Shift + N | New note from template |
 | Ctrl + Shift + D | Daily note |
 | Ctrl + E | Toggle edit / preview |
 | Ctrl + B | Toggle sidebar |
+| Ctrl + Shift + F | Focus mode |
+| Alt + ← / → | Back / forward |
+| Ctrl + Alt + T | Edit table as a grid |
 | Ctrl + 0 / + / - | Fit board / zoom in / zoom out |
 | Space + drag | Pan |
-| Delete | Delete selected card (asks first) |
-| Esc | Close / leave editing |
+| Delete | Delete the selected card (asks first) or arrow (also removes its `[[link]]`) |
+| Esc | Close / leave editing / leave focus mode |
 
 ## Roadmap
 
-- Embeds (`![[note]]`) and heading links
-- Rewrite plain Markdown links `[text](note.md)` on rename
-- Signed releases and auto-update (opt-in)
+- Move a card between murals in one step
+- Signed releases and auto-install updates (opt-in)
 
 ## License
 
