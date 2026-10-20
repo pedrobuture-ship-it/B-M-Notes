@@ -19,6 +19,7 @@ import { useUi } from "@/stores/ui";
 import { basename } from "@/lib/paths";
 import { ipc } from "@/lib/ipc";
 import { TemplateDialog } from "@/features/templates/TemplateDialog";
+import { MindMapDialog } from "@/features/mindmap/MindMapDialog";
 import { HealthDialog } from "@/features/health/HealthDialog";
 import { PropertiesDialog } from "@/features/properties/PropertiesDialog";
 import { Timeline } from "@/features/timeline/Timeline";
@@ -127,6 +128,7 @@ export function App() {
       {info && dialog === "tasks" && <TasksDialog />}
       {info && dialog === "properties" && <PropertiesDialog />}
       {info && dialog === "health" && <HealthDialog />}
+      {info && dialog === "mindmap" && <MindMapDialog />}
       <ConfirmDialog />
       <ChoiceDialog />
       <PromptDialog />

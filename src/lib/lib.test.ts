@@ -472,3 +472,54 @@ describe("i18n", () => {
     expect(resolveLang("en", "pt-BR")).toBe("en");
   });
 });
+
+import { buildMindMap } from "./mindmap";
+
+describe("mind map", () => {
+  it("nests ## and ### under a single # root and lays them out left to right", () => {
+    const m = buildMindMap("# Plan\n## A\n### A1\n### A2\n## B\n", "plan");
+    expect(m.root.text).toBe("Plan");
+    expect(m.root.children.map((c) => c.text)).toEqual(["A", "B"]);
+    expect(m.root.children[0]!.children.map((c) => c.text)).toEqual(["A1", "A2"]);
+    expect(m.nodes.map((n) => n.depth)).toEqual([0, 1, 2, 2, 1]);
+    expect(m.links.length).toBe(4);
+    // Leaves take consecutive rows; parents sit in the middle of their children.
+    expect(m.root.children[0]!.y).toBe((m.root.children[0]!.children[0]!.y + m.root.children[0]!.children[1]!.y) / 2);
+    expect(m.height).toBe(3 * 44);
+  });
+  it("uses the note title as root when there are several top headings", () => {
+    const m = buildMindMap("# One\n# Two\n## Sub\n", "my-note");
+    expect(m.root.text).toBe("my-note");
+    expect(m.root.children.map((c) => c.text)).toEqual(["One", "Two"]);
+    expect(buildMindMap("no headings", "x").nodes.length).toBe(1);
+  });
+});
+
+import { buildBoardHtml, inlineAssets } from "./exportBoard";
+import { emptyBoard } from "./board";
+
+describe("mural export", () => {
+  const board = { ...emptyBoard(), cards: { "a.md": { x: 100, y: 100, w: 280, h: 200, color: "yellow" as const }, "b.md": { x: 600, y: 140, w: 280, h: 200, color: "paper" as const } }, frames: [{ id: "f1", title: "Ideas <x>", color: "paper" as const, x: 60, y: 60, w: 900, h: 320 }], labels: { "auto:a.md->b.md": "next" } };
+  const html = buildBoardHtml({
+    title: "My <mural>",
+    board,
+    cards: [{ path: "a.md", title: "Alpha", html: "<p>hello</p>" }, { path: "b.md", title: "Beta & co", html: "" }],
+    edges: [{ id: "auto:a.md->b.md", source: "a.md", target: "b.md" }, { id: "x", source: "a.md", target: "missing.md" }],
+    theme: "dark",
+  });
+  it("is a single page with escaped titles, positioned cards, frame and one arrow", () => {
+    expect(html).toContain("<title>My &lt;mural&gt;</title>");
+    expect(html).toContain("Beta &amp; co");
+    expect(html).toContain("Ideas &lt;x&gt;");
+    expect(html).toContain("<p>hello</p>");
+    expect((html.match(/<article/g) ?? []).length).toBe(2);
+    expect((html.match(/class="edge"/g) ?? []).length).toBe(2); // curve + arrow head of the one valid edge
+    expect(html).toContain(">next</text>");
+    expect(html).toContain("Content-Security-Policy");
+  });
+  it("inlines assets and drops the ones it cannot read", () => {
+    const out = inlineAssets('<img src="mural://localhost/assets/a%20b.png"><img src="mural://localhost/x.png">', (p) => (p === "assets/a b.png" ? "data:image/png;base64,AAA" : null));
+    expect(out).toContain('src="data:image/png;base64,AAA"');
+    expect(out).toContain('alt="image not included"');
+  });
+});

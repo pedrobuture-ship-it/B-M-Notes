@@ -121,6 +121,33 @@ pub fn save_asset(state: State<'_, AppState>, assets_dir: String, file_name: Str
     ops::save_asset(&state.root()?, &assets_dir, &file_name, &bytes)
 }
 
+/// An image of the workspace as a `data:` URI (used to embed images in exported pages). Images only, at most 5 MB.
+#[tauri::command]
+pub fn read_asset_data_uri(state: State<'_, AppState>, path: String) -> Res<String> {
+    const MAX: u64 = 5 * 1024 * 1024;
+    let abs = paths::safe_join(&state.root()?, &path)?;
+    let mime = paths::image_mime(&abs).ok_or("Not an image")?;
+    let len = std::fs::metadata(&abs).map_err(|e| e.to_string())?.len();
+    if len > MAX {
+        return Err("Image is too large to embed".into());
+    }
+    let bytes = std::fs::read(&abs).map_err(|e| e.to_string())?;
+    Ok(format!("data:{mime};base64,{}", base64::engine::general_purpose::STANDARD.encode(bytes)))
+}
+
+/// Writes an exported `.html` page to a location the user picked in the save dialog.
+#[tauri::command]
+pub fn write_export(dest: String, content: String) -> Res<()> {
+    let p = std::path::Path::new(&dest);
+    if !p.is_absolute() || !p.extension().is_some_and(|e| e.eq_ignore_ascii_case("html")) {
+        return Err("Exports must be saved as an .html file".into());
+    }
+    if content.len() > 64 * 1024 * 1024 {
+        return Err("The export is too large".into());
+    }
+    ops::atomic_write(p, content.as_bytes())
+}
+
 #[tauri::command]
 pub fn absolute_path(state: State<'_, AppState>, path: String) -> Res<String> {
     let root = state.root()?;

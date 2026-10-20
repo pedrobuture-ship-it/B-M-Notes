@@ -76,6 +76,8 @@ pub fn run() {
             commands::empty_trash,
             commands::save_asset,
             commands::absolute_path,
+            commands::read_asset_data_uri,
+            commands::write_export,
             commands::read_meta,
             commands::write_meta,
             commands::delete_meta,

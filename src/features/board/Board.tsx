@@ -5,9 +5,10 @@ import {
   ViewportPortal,
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
-import { AlignCenterHorizontal, AlignCenterVertical, AlignEndHorizontal, AlignEndVertical, AlignHorizontalDistributeCenter, AlignStartHorizontal, AlignStartVertical, AlignVerticalDistributeCenter, BoxSelect, Copy, Lock, ExternalLink, FilePlus, Frame as FrameIcon, Maximize, Pencil, Trash2 } from "lucide-react";
+import { FileDown, AlignCenterHorizontal, AlignCenterVertical, AlignEndHorizontal, AlignEndVertical, AlignHorizontalDistributeCenter, AlignStartHorizontal, AlignStartVertical, AlignVerticalDistributeCenter, BoxSelect, Copy, Lock, ExternalLink, FilePlus, Frame as FrameIcon, Maximize, Pencil, Trash2 } from "lucide-react";
 import { useBoard, MAIN_BOARD } from "@/stores/board";
 import { BoardTabs } from "./BoardTabs";
+import { exportBoardAsHtml } from "@/lib/exportAction";
 import { alignRects, distributeRects, snapRect, type AlignMode, type Rect } from "@/lib/align";
 import { useWorkspace } from "@/stores/workspace";
 import { useSettings } from "@/stores/settings";
@@ -435,6 +436,7 @@ export function Board() {
             { label: "New frame here", icon: <FrameIcon size={15} />, onSelect: () => void createFrameAt(pos) },
             { separator: true },
             { label: "Fit board", icon: <Maximize size={15} />, onSelect: () => void rf.fitView({ duration: 350, padding: 0.15 }) },
+            { label: "Export as web page…", icon: <FileDown size={15} />, onSelect: () => void exportBoardAsHtml() },
           ]);
         }}
         onDoubleClick={(e) => {

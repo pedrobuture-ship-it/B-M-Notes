@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { ArrowLeft, Link2, Check, CircleAlert, Loader2, Lock, LockOpen, Pin, PinOff } from "lucide-react";
+import { ArrowLeft, Link2, ListTree, Check, CircleAlert, Loader2, Lock, LockOpen, Pin, PinOff } from "lucide-react";
 import { lockNote, relockNote, togglePin, unlockNote } from "@/lib/actions";
 import { isEncrypted } from "@/lib/crypto";
 import { useLocks } from "@/stores/locks";
@@ -118,6 +118,7 @@ export function NotePane({ path }: { path: string }) {
         {unlockedHere
           ? <button className="btn" onClick={() => void relockNote(path)} data-tip="Encrypt again with the same password"><Lock size={15} /> Lock again</button>
           : <button className="btn btn-ghost btn-icon" onClick={() => void lockNote(path)} aria-label="Encrypt note" data-tip="Encrypt with a password"><LockOpen size={16} /></button>}
+        <button className="btn btn-ghost btn-icon" onClick={() => useUi.getState().setDialog("mindmap")} aria-label="Mind map" data-tip="Mind map of the headings"><ListTree size={16} /></button>
         <button className="btn btn-ghost btn-icon" onClick={() => togglePin(path)} aria-label={pinned ? "Unpin note" : "Pin note"} data-tip={pinned ? "Unpin" : "Pin to top of the sidebar"}>{pinned ? <PinOff size={16} /> : <Pin size={16} />}</button>
         <div className="segmented" role="group" aria-label="View mode">
           {modes.map((m) => (

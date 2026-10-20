@@ -1,6 +1,6 @@
 import { invoke } from "@tauri-apps/api/core";
 import { listen, type UnlistenFn } from "@tauri-apps/api/event";
-import { open as openDialog } from "@tauri-apps/plugin-dialog";
+import { open as openDialog, save as saveDialog } from "@tauri-apps/plugin-dialog";
 import { openUrl, revealItemInDir } from "@tauri-apps/plugin-opener";
 import type { NoteFile, TreeNode, WorkspaceInfo } from "@/types";
 
@@ -94,6 +94,12 @@ export const ipc = {
   emptyTrash: () => call<void>("empty_trash"),
   saveAsset: (assetsDir: string, fileName: string, dataBase64: string) =>
     call<string>("save_asset", { assetsDir, fileName, dataBase64 }),
+  pickSavePath: async (defaultPath: string, extension: string): Promise<string | null> => {
+    const res = await saveDialog({ defaultPath, filters: [{ name: extension.toUpperCase(), extensions: [extension] }] });
+    return typeof res === "string" ? res : null;
+  },
+  readAssetDataUri: (path: string) => call<string>("read_asset_data_uri", { path }),
+  writeExport: (dest: string, content: string) => call<void>("write_export", { dest, content }),
   absolutePath: (path: string) => call<string>("absolute_path", { path }),
   readMeta: (file: string) => call<MetaRead>("read_meta", { file }),
   launchPath: () => call<string | null>("launch_path"),

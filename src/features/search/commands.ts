@@ -2,6 +2,7 @@ import { ipc } from "@/lib/ipc";
 import { lockNote, newNote, revealInFolder, togglePin } from "@/lib/actions";
 import { useSettings } from "@/stores/settings";
 import { runBackup } from "@/lib/backup";
+import { exportBoardAsHtml } from "@/lib/exportAction";
 import { boardCommand } from "@/features/board/boardBus";
 import { useUi } from "@/stores/ui";
 import { useWorkspace } from "@/stores/workspace";
@@ -55,12 +56,14 @@ export function getCommands(): Command[] {
     { id: "daily", label: "Open daily note", hint: "Ctrl Shift D", run: () => void useWorkspace.getState().openDaily() },
     { id: "toggle-preview", label: "Toggle preview", hint: "Ctrl E", run: () => { if (ui().view === "note") ui().setNoteMode(ui().noteMode === "edit" ? "split" : "edit"); } },
     { id: "toggle-editor", label: "Toggle editor", run: () => { if (ui().view === "note") ui().setNoteMode(ui().noteMode === "preview" ? "split" : "preview"); } },
+    { id: "export-board", label: "Export this mural as a web page (.html)", run: () => void exportBoardAsHtml() },
     { id: "go-board", label: "Go to mural", run: () => ui().setView("board") },
     { id: "go-timeline", label: "Open timeline", run: () => ui().setView("timeline") },
     { id: "go-graph", label: "Explore graph", run: () => ui().setSidebarTab("explore") },
     { id: "new-from-template", label: "New note from template…", run: () => ui().setDialog("templates") },
     { id: "tasks", label: "Open tasks", run: () => ui().setDialog("tasks") },
     { id: "backup", label: "Back up now", run: () => void runBackup() },
+    { id: "mindmap", label: "Mind map of this note", run: () => { if (ui().view === "note" && ui().activeNote) ui().setDialog("mindmap"); } },
     { id: "health", label: "Check notes health (broken links, orphans)", run: () => ui().setDialog("health") },
     { id: "properties", label: "Open properties table", run: () => ui().setDialog("properties") },
     { id: "encrypt", label: "Encrypt this note with a password…", run: () => { if (ui().view === "note" && ui().activeNote) void lockNote(ui().activeNote!); } },
