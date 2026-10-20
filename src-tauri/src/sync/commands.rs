@@ -80,6 +80,37 @@ pub async fn sync_unlink(app: AppHandle, state: State<'_, AppState>) -> Res<Sync
     .await
 }
 
+/// Fetches and reports what others changed on the remote.
+#[tauri::command]
+pub async fn sync_check(app: AppHandle, state: State<'_, AppState>) -> Res<SyncState> {
+    with_git(&app, &state, |g| g.check()).await
+}
+
+/// Keeps paths out of the shared repository. Returns the paths that are already shared and were left alone (pass `force` to unshare).
+#[tauri::command]
+pub async fn sync_set_private(app: AppHandle, state: State<'_, AppState>, paths: Vec<String>, force: bool) -> Res<Vec<String>> {
+    with_git(&app, &state, move |g| g.set_private(&paths, force)).await
+}
+
+#[tauri::command]
+pub async fn sync_unset_private(app: AppHandle, state: State<'_, AppState>, path: String) -> Res<SyncState> {
+    with_git(&app, &state, move |g| {
+        g.remove_private(&path)?;
+        Ok(g.status())
+    })
+    .await
+}
+
+#[tauri::command]
+pub async fn sync_presence_publish(app: AppHandle, state: State<'_, AppState>, login: String, note: Option<String>) -> Res<()> {
+    with_git(&app, &state, move |g| g.presence_publish(&login, note.as_deref())).await
+}
+
+#[tauri::command]
+pub async fn sync_presence_list(app: AppHandle, state: State<'_, AppState>, me: String) -> Res<Vec<super::Presence>> {
+    with_git(&app, &state, move |g| g.presence_list(&me)).await
+}
+
 #[derive(Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Repo {

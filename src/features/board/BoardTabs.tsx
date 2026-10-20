@@ -1,4 +1,6 @@
-import { Plus, X } from "lucide-react";
+import { Lock, Plus, X } from "lucide-react";
+import { isPrivate, togglePrivate } from "@/lib/actions";
+import { useSync } from "@/stores/sync";
 import { useBoard, MAIN_BOARD } from "@/stores/board";
 import { useUi } from "@/stores/ui";
 import { useWorkspace } from "@/stores/workspace";
@@ -9,6 +11,8 @@ const notePaths = () => Object.keys(useWorkspace.getState().notes);
 export function BoardTabs() {
   const boards = useBoard((s) => s.boards);
   const activeId = useBoard((s) => s.activeId);
+  const linked = useSync((s) => s.info?.linked ?? false);
+  useSync((s) => s.info?.private);
   const { switchBoard, createBoard, renameBoard, deleteBoard } = useBoard.getState();
 
   const create = async () => {
@@ -37,6 +41,9 @@ export function BoardTabs() {
           <button className="board-tab-name" onClick={() => void switchBoard(b.id, notePaths())} onDoubleClick={() => void rename(b.id, b.name)} title={b.id === MAIN_BOARD ? "Shows every note" : "Double-click to rename"}>
             {b.name}
           </button>
+          {b.id !== MAIN_BOARD && linked && (
+            <button className="board-tab-x" onClick={() => void togglePrivate(`.mural/boards/${b.id}.json`)} aria-label={`${isPrivate(`.mural/boards/${b.id}.json`) ? "Share" : "Keep private"} mural ${b.name}`} data-tip={isPrivate(`.mural/boards/${b.id}.json`) ? "Private (click to share)" : "Keep private"} style={isPrivate(`.mural/boards/${b.id}.json`) ? { opacity: 1, color: "var(--amber)" } : undefined}><Lock size={11} /></button>
+          )}
           {b.id !== MAIN_BOARD && (
             <button className="board-tab-x" onClick={() => void remove(b.id, b.name)} aria-label={`Delete mural ${b.name}`}><X size={12} /></button>
           )}

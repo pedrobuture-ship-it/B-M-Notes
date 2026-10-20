@@ -85,6 +85,8 @@ function statusText(info: NonNullable<ReturnType<typeof useSync.getState>["info"
 export function SyncPanel() {
   const { info, busy, error, lastSync, syncNow, resolve, unlink } = useSync();
   const auto = useSettings((s) => s.settings.sync.auto);
+  const presence = useSettings((s) => s.settings.sync.presence);
+  const unsetPrivate = useSync((s) => s.unsetPrivate);
   const update = useSettings((s) => s.update);
   const [mode, setMode] = useState<Mode>(null);
 
@@ -119,8 +121,21 @@ export function SyncPanel() {
         <button className="btn btn-primary" disabled={busy} onClick={() => void syncNow()}>{busy ? "Syncing…" : "Sync now"}</button>
       </Row>
       <Row title="Sync automatically" hint="Sends your changes shortly after you stop typing and checks for your friend's changes every minute.">
-        <Toggle label="Sync automatically" checked={auto} onChange={(v) => update((s) => ({ ...s, sync: { auto: v } }))} />
+        <Toggle label="Sync automatically" checked={auto} onChange={(v) => update((s) => ({ ...s, sync: { ...s.sync, auto: v } }))} />
       </Row>
+      <Row title="Show who is here" hint="Tells the people you sync with which note you have open (a tiny branch named bm-presence-you). Others appear in the note's banner.">
+        <Toggle label="Show who is here" checked={presence} onChange={(v) => update((s) => ({ ...s, sync: { ...s.sync, presence: v } }))} />
+      </Row>
+      <div style={{ margin: "6px 0 12px" }}>
+        <div className="handwritten-label" style={{ fontSize: "1.3rem" }}>Private on this computer</div>
+        <small style={{ color: "var(--ink-faint)" }}>These are never uploaded. Right-click a note in the sidebar → “Keep private”, or the lock on a mural tab.</small>
+        {info.private.length === 0 ? <p className="m-0" style={{ color: "var(--ink-dim)" }}>Nothing is private.</p> : info.private.map((p) => (
+          <div key={p} className="flex items-center gap-2" style={{ padding: "2px 0" }}>
+            <span className="flex-1">{p}</span>
+            <button className="btn" disabled={busy} onClick={() => void unsetPrivate(p)}>Share again</button>
+          </div>
+        ))}
+      </div>
       {error && <p role="alert" style={{ color: "var(--red)", fontWeight: 700 }}>{error}</p>}
       {info.conflicts.length > 0 && (
         <div className="paper-card" style={{ padding: "12px 16px", margin: "8px 0 12px" }}>

@@ -13,7 +13,7 @@ export const DEFAULT_SETTINGS: Settings = {
   editor: { lineNumbers: false, wordWrap: true, fontSize: 15, autosaveDelay: 600 },
   files: { assetsFolder: "assets", ignoredFolders: [], dailyFolder: "daily", trashRetentionDays: 30 },
   board: { grid: true, snap: false, showConnections: true },
-  sync: { auto: true },
+  sync: { auto: true, presence: true },
   search: { saved: [] },
   nav: { pinned: [] },
   shortcuts: {},
@@ -97,7 +97,7 @@ export function normalizeSettings(raw: unknown): Settings {
       snap: bool(b.snap, d.board.snap),
       showConnections: bool(b.showConnections, d.board.showConnections),
     },
-    sync: { auto: bool(obj(r.sync).auto, d.sync.auto) },
+    sync: { auto: bool(obj(r.sync).auto, d.sync.auto), presence: bool(obj(r.sync).presence, d.sync.presence) },
     search: {
       saved: (Array.isArray(obj(r.search).saved) ? (obj(r.search).saved as unknown[]) : [])
         .map((x) => obj(x))

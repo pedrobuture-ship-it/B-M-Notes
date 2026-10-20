@@ -3,6 +3,8 @@ import { ArrowLeft, Link2, ListTree, Check, CircleAlert, Loader2, Lock, LockOpen
 import { lockNote, relockNote, togglePin, unlockNote } from "@/lib/actions";
 import { isEncrypted } from "@/lib/crypto";
 import { useLocks } from "@/stores/locks";
+import { useSync } from "@/stores/sync";
+import { useTr } from "@/lib/i18n";
 import { useWorkspace } from "@/stores/workspace";
 import { useSettings } from "@/stores/settings";
 import { useUi, type NoteMode } from "@/stores/ui";
@@ -62,6 +64,10 @@ export function NotePane({ path }: { path: string }) {
   const openNote = useUi((s) => s.openNote);
   const setView = useUi((s) => s.setView);
 
+  const tr = useTr();
+  const others = useSync((s) => s.presence.filter((p) => p.note === path));
+  const changedRemotely = useSync((s) => s.info?.remoteChanged.includes(path) ?? false);
+  useEffect(() => { void useSync.getState().check(); }, [path]);
   const unlockedHere = useLocks((s) => path in s.passwords);
   const pinned = useSettings((s) => s.settings.nav.pinned.includes(path));
   const pending = useUi((s) => s.pendingHeading);
@@ -136,6 +142,19 @@ export function NotePane({ path }: { path: string }) {
         </div>
       )}
 
+      {others.length > 0 && (
+        <div className="banner" role="status">
+          <span aria-hidden="true">👥</span>
+          <span className="flex-1">{tr("{names} is on this note right now.", { names: others.map((o) => o.login).join(", ") })}</span>
+        </div>
+      )}
+      {changedRemotely && (
+        <div className="banner" role="alert">
+          <CircleAlert size={16} />
+          <span className="flex-1">{tr("Someone changed this note on the remote. Sync before editing to avoid a conflict.")}</span>
+          <button className="btn" onClick={() => void useSync.getState().syncNow()}>{tr("Sync now")}</button>
+        </div>
+      )}
       {unlockedHere && (
         <div className="banner" role="status">
           <LockOpen size={16} />

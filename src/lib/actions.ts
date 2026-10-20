@@ -9,6 +9,7 @@ import { slugHeading } from "./headings";
 import { ipc } from "./ipc";
 import { decryptText, encryptText, isEncrypted } from "./crypto";
 import { useLocks } from "@/stores/locks";
+import { useSync } from "@/stores/sync";
 
 export function resolveWikiTarget(target: string): string | null {
   return useWorkspace.getState().index.resolver.resolve(target);
@@ -213,4 +214,15 @@ export async function unlockNote(path: string, password: string): Promise<boolea
 /** Encrypts an unlocked note again with the password used to unlock it (asks if it was forgotten). */
 export async function relockNote(path: string): Promise<boolean> {
   return lockNote(path, useLocks.getState().passwords[path]);
+}
+
+/** Keeps a note, folder or mural file out of the shared repository (or shares it again). */
+export async function togglePrivate(path: string): Promise<void> {
+  const sync = useSync.getState();
+  if (sync.info?.private.includes(path)) await sync.unsetPrivate(path);
+  else await sync.setPrivate([path]);
+}
+
+export function isPrivate(path: string): boolean {
+  return useSync.getState().info?.private.includes(path) ?? false;
 }

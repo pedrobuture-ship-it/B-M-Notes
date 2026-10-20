@@ -1,7 +1,9 @@
 //! Optional folder sync through the system `git`. Nothing here runs unless the user links a repository.
 mod board_merge;
+mod collab;
 mod commands;
 
+pub use collab::Presence;
 pub use commands::*;
 
 use serde::Serialize;
@@ -10,7 +12,7 @@ use std::process::Command;
 
 type Res<T> = Result<T, String>;
 
-const IGNORE_LINES: [&str; 5] = [".mural/settings.json", ".mural/sync.json", ".mural/backups/", ".mural/trash/", ".mural/*.corrupt.json"];
+const IGNORE_LINES: [&str; 6] = [".mural/settings.json", ".mural/sync.json", ".mural/backups/", ".mural/trash/", ".mural/plugins/", ".mural/*.corrupt.json"];
 const LARGE_FILE: u64 = 10 * 1024 * 1024;
 const BOARD: &str = ".mural/board.json";
 
@@ -32,6 +34,10 @@ pub struct SyncState {
     pub behind: u32,
     /// Files over 10 MB that were just committed (they make the repository heavy).
     pub large_files: Vec<String>,
+    /// Files that changed on the remote since the last merge (what you would receive on the next sync).
+    pub remote_changed: Vec<String>,
+    /// Paths kept out of the shared repository on this computer.
+    pub private: Vec<String>,
 }
 
 pub struct Git {
@@ -59,21 +65,34 @@ impl Git {
     }
 
     fn raw(&self, args: &[&str]) -> Res<Out> {
+        self.raw_in(args, None)
+    }
+
+    /// Like `raw`, feeding `input` to git's stdin.
+    fn raw_in(&self, args: &[&str], input: Option<&[u8]>) -> Res<Out> {
+        use std::io::Write;
+        use std::process::Stdio;
         let mut cmd = Command::new("git");
         cmd.current_dir(&self.root)
             .env("GIT_TERMINAL_PROMPT", "0")
             .env("GIT_ALLOW_PROTOCOL", "https:file")
             .env("LC_ALL", "C")
-            .stdin(std::process::Stdio::null());
+            .stdin(if input.is_some() { Stdio::piped() } else { Stdio::null() })
+            .stdout(Stdio::piped())
+            .stderr(Stdio::piped());
         if let Some(a) = &self.auth {
             cmd.arg("-c").arg(format!("http.https://github.com/.extraheader=Authorization: Basic {a}"));
         }
         if !self.identity {
             cmd.args(["-c", "user.name=b&m notes", "-c", "user.email=notes@bm-notes.local"]);
         }
-        let out = cmd.args(args).output().map_err(|e| {
+        let mut child = cmd.args(args).spawn().map_err(|e| {
             if e.kind() == std::io::ErrorKind::NotFound { "Git is not installed.".to_string() } else { e.to_string() }
         })?;
+        if let (Some(data), Some(mut stdin)) = (input, child.stdin.take()) {
+            stdin.write_all(data).map_err(|e| e.to_string())?;
+        }
+        let out = child.wait_with_output().map_err(|e| e.to_string())?;
         Ok(Out {
             ok: out.status.success(),
             stdout: String::from_utf8_lossy(&out.stdout).into_owned(),
@@ -84,6 +103,11 @@ impl Git {
     /// Runs git and fails with its stderr when it exits non-zero.
     fn run(&self, args: &[&str]) -> Res<String> {
         let o = self.raw(args)?;
+        if o.ok { Ok(o.stdout) } else { Err(clean_err(&o.stderr, args)) }
+    }
+
+    fn run_in(&self, args: &[&str], input: &[u8]) -> Res<String> {
+        let o = self.raw_in(args, Some(input))?;
         if o.ok { Ok(o.stdout) } else { Err(clean_err(&o.stderr, args)) }
     }
 
@@ -137,12 +161,17 @@ impl Git {
         s.branch = self.branch();
         s.conflicts = self.conflicts();
         s.dirty = !self.lines(&["status", "--porcelain"]).is_empty();
+        s.private = self.private_list();
         if let Some(b) = &s.branch {
             let range = format!("HEAD...origin/{b}");
             if let Ok(o) = self.run(&["rev-list", "--left-right", "--count", &range]) {
                 let mut it = o.split_whitespace().map(|n| n.parse::<u32>().unwrap_or(0));
                 s.ahead = it.next().unwrap_or(0);
                 s.behind = it.next().unwrap_or(0);
+            }
+            let theirs = format!("HEAD...origin/{b}");
+            if s.behind > 0 {
+                s.remote_changed = self.lines(&["diff", "--name-only", &theirs]);
             }
         }
         s

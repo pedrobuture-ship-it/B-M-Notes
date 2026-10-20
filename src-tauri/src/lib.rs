@@ -124,6 +124,11 @@ pub fn run() {
             sync::sync_now,
             sync::sync_resolve,
             sync::sync_unlink,
+            sync::sync_check,
+            sync::sync_set_private,
+            sync::sync_unset_private,
+            sync::sync_presence_publish,
+            sync::sync_presence_list,
             sync::github_list_repos,
             sync::github_create_repo,
         ])

@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import { ipc, type SyncInfo } from "@/lib/ipc";
+import { ipc, type Presence, type SyncInfo } from "@/lib/ipc";
 import { useUi } from "./ui";
 import { useWorkspace } from "./workspace";
 
@@ -8,6 +8,15 @@ interface SyncState {
   busy: boolean;
   error: string | null;
   lastSync: number | null;
+  /** GitHub login of this user (for presence). */
+  login: string | null;
+  presence: Presence[];
+  setPresence: (p: Presence[]) => void;
+  setLogin: (l: string | null) => void;
+  /** Fetches and refreshes `remoteChanged` (at most every 20 s). */
+  check: () => Promise<void>;
+  setPrivate: (paths: string[]) => Promise<void>;
+  unsetPrivate: (path: string) => Promise<void>;
   reset: () => void;
   refresh: () => Promise<void>;
   syncNow: (silent?: boolean) => Promise<void>;
@@ -16,6 +25,7 @@ interface SyncState {
   unlink: () => Promise<void>;
 }
 
+let lastCheck = 0;
 const msg = (e: unknown) => (e instanceof Error ? e.message : String(e));
 
 export const useSync = create<SyncState>((set, get) => {
@@ -44,7 +54,49 @@ export const useSync = create<SyncState>((set, get) => {
     busy: false,
     error: null,
     lastSync: null,
-    reset: () => set({ info: null, busy: false, error: null, lastSync: null }),
+    login: null,
+    presence: [],
+    setPresence: (presence) => set({ presence }),
+    setLogin: (login) => set({ login }),
+    check: async () => {
+      const { info, busy } = get();
+      if (!info?.linked || busy || Date.now() - lastCheck < 20_000) return;
+      lastCheck = Date.now();
+      try {
+        set({ info: await ipc.syncCheck() });
+      } catch {
+        /* offline: the banner just stays as it was */
+      }
+    },
+    setPrivate: async (paths) => {
+      const ui = useUi.getState();
+      try {
+        const tracked = await ipc.syncSetPrivate(paths, false);
+        if (tracked.length) {
+          const ok = await ui.confirm({
+            title: "Stop sharing?",
+            message: `${tracked.join(", ")} ${tracked.length === 1 ? "is" : "are"} already shared. Keeping ${tracked.length === 1 ? "it" : "them"} private removes ${tracked.length === 1 ? "it" : "them"} from the repository, and the other people lose their copy on their next sync (the history still has it). Your own file stays.`,
+            confirmLabel: "Keep private",
+            danger: true,
+          });
+          if (!ok) return;
+          await ipc.syncSetPrivate(paths, true);
+        }
+        set({ info: await ipc.syncStatus() });
+        ui.toast("Kept private on this computer", "success");
+      } catch (e) {
+        ui.toast(msg(e), "error");
+      }
+    },
+    unsetPrivate: async (path) => {
+      try {
+        set({ info: await ipc.syncUnsetPrivate(path) });
+        useUi.getState().toast("Will be shared on the next sync", "info");
+      } catch (e) {
+        useUi.getState().toast(msg(e), "error");
+      }
+    },
+    reset: () => set({ info: null, busy: false, error: null, lastSync: null, presence: [] }),
     refresh: async () => {
       try {
         set({ info: await ipc.syncStatus() });

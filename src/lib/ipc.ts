@@ -33,6 +33,14 @@ export interface SyncInfo {
   ahead: number;
   behind: number;
   largeFiles: string[];
+  remoteChanged: string[];
+  private: string[];
+}
+
+export interface Presence {
+  login: string;
+  note: string | null;
+  at: number;
 }
 
 export interface GithubRepo {
@@ -123,6 +131,11 @@ export const ipc = {
   syncLink: (url: string) => call<SyncInfo>("sync_link", { url }),
   syncNow: () => call<SyncInfo>("sync_now"),
   syncResolve: (path: string, choice: "mine" | "theirs" | "both") => call<SyncInfo>("sync_resolve", { path, choice }),
+  syncCheck: () => call<SyncInfo>("sync_check"),
+  syncSetPrivate: (paths: string[], force: boolean) => call<string[]>("sync_set_private", { paths, force }),
+  syncUnsetPrivate: (path: string) => call<SyncInfo>("sync_unset_private", { path }),
+  syncPresencePublish: (login: string, note: string | null) => call<void>("sync_presence_publish", { login, note }),
+  syncPresenceList: (me: string) => call<Presence[]>("sync_presence_list", { me }),
   syncUnlink: () => call<SyncInfo>("sync_unlink"),
   onFsChange: (cb: (c: FsChange) => void): Promise<UnlistenFn> => listen<FsChange>("fs-change", (e) => cb(e.payload)),
 };

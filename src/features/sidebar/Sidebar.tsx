@@ -4,11 +4,12 @@ import { useWorkspace } from "@/stores/workspace";
 import { useUi, type SidebarTab } from "@/stores/ui";
 import { useBoard, MAIN_BOARD } from "@/stores/board";
 import { useSettings } from "@/stores/settings";
+import { useSync } from "@/stores/sync";
 import { Menu, useContextMenu, type MenuEntry } from "@/components/Menu";
 import { EmptyFiles, EmptyTags } from "@/components/doodles";
 import { VirtualList } from "@/components/VirtualList";
 import { basename, dirname, stripExt } from "@/lib/paths";
-import { copyPath, deleteEntry, deleteSavedSearch, isPinned, lockNote, newFolder, newNote, renameEntry, revealInFolder, togglePin } from "@/lib/actions";
+import { copyPath, deleteEntry, deleteSavedSearch, isPinned, isPrivate, lockNote, newFolder, togglePrivate, newNote, renameEntry, revealInFolder, togglePin } from "@/lib/actions";
 import { ipc } from "@/lib/ipc";
 import type { TreeNode } from "@/types";
 
@@ -96,6 +97,12 @@ function NotesPanel() {
       )}
     </div>
   );
+}
+
+/** "Keep private" / "Share again", only while the folder is linked to a repository. */
+function privateEntry(path: string): MenuEntry[] {
+  if (!useSync.getState().info?.linked) return [];
+  return [{ label: isPrivate(path) ? "Share again (sync)" : "Keep private (don't sync)", onSelect: () => void togglePrivate(path) }];
 }
 
 /** Saved searches, pinned notes and recently opened notes, above the full list. */
@@ -296,6 +303,7 @@ function TreeRow({ node, depth, expanded: isOpen, toggle, expand, openMenu }: It
         { label: "New folder here", icon: <FolderPlus size={15} />, onSelect: () => { expand(node.path); void newFolder(node.path); } },
         { separator: true },
         { label: "Rename", onSelect: () => void renameEntry(node.path, true) },
+        ...privateEntry(node.path),
         { label: "Reveal in file manager", onSelect: () => void revealInFolder(node.path) },
         { label: "Copy path", onSelect: () => void copyPath(node.path) },
         { separator: true },
@@ -308,6 +316,7 @@ function TreeRow({ node, depth, expanded: isOpen, toggle, expand, openMenu }: It
         { label: "Move to…", onSelect: () => void promptMove(node.path) },
         { label: "Encrypt with a password…", onSelect: () => void lockNote(node.path) },
         ...useBoard.getState().boards.filter((b) => b.id !== MAIN_BOARD).map((b) => ({ label: `Add to mural: ${b.name}`, onSelect: () => void useBoard.getState().addToBoard(b.id, node.path) })),
+        ...privateEntry(node.path),
         { label: "Reveal in file manager", onSelect: () => void revealInFolder(node.path) },
         { label: "Copy path", onSelect: () => void copyPath(node.path) },
         { separator: true },

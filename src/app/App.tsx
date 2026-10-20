@@ -30,6 +30,7 @@ import { Timeline } from "@/features/timeline/Timeline";
 import { useTr } from "@/lib/i18n";
 import { TasksDialog } from "@/features/tasks/TasksDialog";
 import { TrashDialog } from "@/features/trash/TrashDialog";
+import { usePresence } from "@/features/shell/usePresence";
 import { useAutoBackup } from "@/features/shell/useAutoBackup";
 import { useAutoSync } from "@/features/shell/useAutoSync";
 
@@ -98,6 +99,7 @@ export function App() {
 
   useAutoSync();
   useAutoBackup();
+  usePresence();
   useDueReminder();
 
   // Flush pending saves when the window is closing / hidden.
