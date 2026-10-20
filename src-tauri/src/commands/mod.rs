@@ -135,6 +135,49 @@ pub fn read_asset_data_uri(state: State<'_, AppState>, path: String) -> Res<Stri
     Ok(format!("data:{mime};base64,{}", base64::engine::general_purpose::STANDARD.encode(bytes)))
 }
 
+#[derive(Serialize)]
+pub struct PluginFile {
+    pub name: String,
+    pub code: String,
+}
+
+const PLUGIN_DIR: &str = ".mural/plugins";
+
+/// The `.js` files of `.mural/plugins/` (at most 30, 200 KB each, no symlinks). Running them is up to the frontend sandbox.
+#[tauri::command]
+pub fn list_plugins(state: State<'_, AppState>) -> Res<Vec<PluginFile>> {
+    let dir = paths::safe_join(&state.root()?, PLUGIN_DIR)?;
+    let Ok(rd) = std::fs::read_dir(&dir) else { return Ok(vec![]) };
+    let mut out = Vec::new();
+    for e in rd.flatten() {
+        let name = e.file_name().to_string_lossy().into_owned();
+        let Ok(ft) = e.file_type() else { continue };
+        if !ft.is_file() || ft.is_symlink() || !name.ends_with(".js") || name.len() > 80 {
+            continue;
+        }
+        let Ok(meta) = e.metadata() else { continue };
+        if meta.len() > 200 * 1024 {
+            continue;
+        }
+        if let Ok(code) = std::fs::read_to_string(e.path()) {
+            out.push(PluginFile { name, code });
+        }
+        if out.len() >= 30 {
+            break;
+        }
+    }
+    out.sort_by(|a, b| a.name.cmp(&b.name));
+    Ok(out)
+}
+
+/// Creates `.mural/plugins/` (so it can be opened in a file manager) and returns its workspace-relative path.
+#[tauri::command]
+pub fn ensure_plugins_dir(state: State<'_, AppState>) -> Res<String> {
+    let dir = paths::safe_join(&state.root()?, PLUGIN_DIR)?;
+    std::fs::create_dir_all(&dir).map_err(|e| e.to_string())?;
+    Ok(PLUGIN_DIR.to_string())
+}
+
 /// Opens a PDF, audio file or image of the workspace with the system's default app. Nothing executable is ever opened.
 #[tauri::command]
 pub fn open_attachment(app: AppHandle, state: State<'_, AppState>, path: String) -> Res<()> {

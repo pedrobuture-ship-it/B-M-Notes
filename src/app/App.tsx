@@ -22,6 +22,7 @@ import { TemplateDialog } from "@/features/templates/TemplateDialog";
 import { RecordDialog } from "@/features/audio/RecordDialog";
 import { TableDialog } from "@/features/tables/TableDialog";
 import { CalendarDialog } from "@/features/calendar/CalendarDialog";
+import { usePluginsLoader } from "@/features/shell/usePluginsLoader";
 import { useDueReminder } from "@/features/shell/useDueReminder";
 import { MindMapDialog } from "@/features/mindmap/MindMapDialog";
 import { HealthDialog } from "@/features/health/HealthDialog";
@@ -30,6 +31,7 @@ import { Timeline } from "@/features/timeline/Timeline";
 import { useTr } from "@/lib/i18n";
 import { TasksDialog } from "@/features/tasks/TasksDialog";
 import { TrashDialog } from "@/features/trash/TrashDialog";
+import { useUpdateCheck } from "@/features/shell/useUpdateCheck";
 import { usePresence } from "@/features/shell/usePresence";
 import { useAutoBackup } from "@/features/shell/useAutoBackup";
 import { useAutoSync } from "@/features/shell/useAutoSync";
@@ -100,7 +102,9 @@ export function App() {
   useAutoSync();
   useAutoBackup();
   usePresence();
+  useUpdateCheck();
   useDueReminder();
+  usePluginsLoader();
 
   // Flush pending saves when the window is closing / hidden.
   useEffect(() => {

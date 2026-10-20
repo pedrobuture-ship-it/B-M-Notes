@@ -2,6 +2,8 @@ import { useEffect, useRef, useState, type ReactNode } from "react";
 import { Row, Toggle } from "./controls";
 import { SyncPanel } from "./SyncPanel";
 import { BackupPanel } from "./BackupPanel";
+import { UpdatesPanel } from "./UpdatesPanel";
+import { PluginsPanel } from "./PluginsPanel";
 import { Dialog } from "@/components/Dialogs";
 import { useSettings } from "@/stores/settings";
 import { useUi } from "@/stores/ui";
@@ -116,7 +118,7 @@ function GithubConnect({ children }: { children?: ReactNode }) {
   );
 }
 
-const SECTIONS = ["Appearance", "Editor", "Files", "Daily Notes", "Board", "Sync", "Backup", "Keyboard"] as const;
+const SECTIONS = ["Appearance", "Editor", "Files", "Daily Notes", "Board", "Sync", "Backup", "Updates", "Plugins", "Keyboard"] as const;
 
 export function SettingsDialog() {
   const setDialog = useUi((s) => s.setDialog);
@@ -199,6 +201,8 @@ export function SettingsDialog() {
             </>
           )}
           {section === "Backup" && <BackupPanel />}
+          {section === "Updates" && <UpdatesPanel />}
+          {section === "Plugins" && <PluginsPanel />}
           {section === "Sync" && <GithubConnect><SyncPanel /></GithubConnect>}
           {section === "Keyboard" && <div style={{ margin: "-18px -22px" }}><ShortcutsSettings /><ShortcutsList /></div>}
         </div>

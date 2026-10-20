@@ -3,6 +3,7 @@ mod commands;
 mod filesystem;
 mod github;
 mod sync;
+mod update;
 mod watcher;
 
 use filesystem::{paths, AppState};
@@ -109,6 +110,9 @@ pub fn run() {
             commands::read_asset_data_uri,
             commands::write_export,
             commands::open_attachment,
+            commands::list_plugins,
+            commands::ensure_plugins_dir,
+            update::check_update,
             commands::read_meta,
             commands::write_meta,
             commands::delete_meta,

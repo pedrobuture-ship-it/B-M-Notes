@@ -18,6 +18,8 @@ export const DEFAULT_SETTINGS: Settings = {
   nav: { pinned: [] },
   shortcuts: {},
   backup: { folder: "", auto: false, keep: 5 },
+  updates: { check: false },
+  plugins: { approved: {} },
 };
 
 const num = (v: unknown, d: number): number => (typeof v === "number" && Number.isFinite(v) ? v : d);
@@ -107,6 +109,8 @@ export function normalizeSettings(raw: unknown): Settings {
     },
     nav: { pinned: (Array.isArray(obj(r.nav).pinned) ? (obj(r.nav).pinned as unknown[]) : []).filter((x): x is string => typeof x === "string").slice(0, 100) },
     shortcuts: Object.fromEntries(Object.entries(obj(r.shortcuts)).filter(([k, v]) => typeof v === "string" && k.length < 40 && (v as string).length < 40)) as Record<string, string>,
+    updates: { check: bool(obj(r.updates).check, d.updates.check) },
+    plugins: { approved: Object.fromEntries(Object.entries(obj(obj(r.plugins).approved)).filter(([k, v]) => k.length < 90 && typeof v === "string" && /^[0-9a-f]{64}$/.test(v))) as Record<string, string> },
     backup: {
       folder: str(obj(r.backup).folder, d.backup.folder).slice(0, 500),
       auto: bool(obj(r.backup).auto, d.backup.auto),

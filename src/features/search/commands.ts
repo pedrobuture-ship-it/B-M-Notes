@@ -2,6 +2,7 @@ import { ipc } from "@/lib/ipc";
 import { lockNote, newNote, revealInFolder, togglePin } from "@/lib/actions";
 import { useSettings } from "@/stores/settings";
 import { runBackup } from "@/lib/backup";
+import { usePlugins } from "@/stores/plugins";
 import { exportBoardAsHtml } from "@/lib/exportAction";
 import { boardCommand } from "@/features/board/boardBus";
 import { useUi } from "@/stores/ui";
@@ -71,6 +72,7 @@ export function getCommands(): Command[] {
     { id: "properties", label: "Open properties table", run: () => ui().setDialog("properties") },
     { id: "encrypt", label: "Encrypt this note with a password…", run: () => { if (ui().view === "note" && ui().activeNote) void lockNote(ui().activeNote!); } },
     { id: "zen", label: "Toggle focus mode", hint: "Ctrl Shift F", run: () => ui().setZen(!ui().zen) },
+    ...usePlugins.getState().commands.map((c) => ({ id: `plugin:${c.key}`, label: `${c.plugin}: ${c.label}`, run: () => void usePlugins.getState().run(c.key) })),
     { id: "pin", label: "Pin / unpin this note", run: () => { if (ui().view === "note" && ui().activeNote) togglePin(ui().activeNote!); } },
     { id: "back", label: "Go back", hint: "Alt ←", run: () => ui().goBack() },
     { id: "forward", label: "Go forward", hint: "Alt →", run: () => ui().goForward() },

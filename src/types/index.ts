@@ -77,6 +77,9 @@ export interface Settings {
   /** Action id -> key combo ("Ctrl+K"). Missing ids use the default. */
   shortcuts: Record<string, string>;
   backup: { folder: string; auto: boolean; keep: number };
+  updates: { check: boolean };
+  /** Plugin file name -> SHA-256 of the code the user approved. */
+  plugins: { approved: Record<string, string> };
 }
 
 export type SaveStatus = "idle" | "saving" | "saved" | "error";

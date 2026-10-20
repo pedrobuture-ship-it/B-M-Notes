@@ -63,6 +63,19 @@ export interface BackupResult {
   bytes: number;
 }
 
+export interface UpdateInfo {
+  current: string;
+  latest: string;
+  newer: boolean;
+  url: string;
+  notes: string;
+}
+
+export interface PluginFile {
+  name: string;
+  code: string;
+}
+
 export interface MetaRead {
   content: string | null;
   backup: string | null;
@@ -127,6 +140,9 @@ export const ipc = {
   githubCreateRepo: (name: string, isPrivate: boolean) => call<GithubRepo>("github_create_repo", { name, private: isPrivate }),
   backupNow: (dest: string, stamp: string, keep: number) => call<BackupResult>("backup_now", { dest, stamp, keep }),
   backupNewest: (dest: string) => call<number | null>("backup_newest", { dest }),
+  listPlugins: () => call<PluginFile[]>("list_plugins"),
+  ensurePluginsDir: () => call<string>("ensure_plugins_dir"),
+  checkUpdate: () => call<UpdateInfo>("check_update"),
   syncStatus: () => call<SyncInfo>("sync_status"),
   syncLink: (url: string) => call<SyncInfo>("sync_link", { url }),
   syncNow: () => call<SyncInfo>("sync_now"),

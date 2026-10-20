@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { extractTags, extractTitle, extractWikiLinks, removeWikiLinks, toggleCheckbox } from "./markdownText";
 import { slugify } from "./slug";
 import { createResolver } from "./wikiResolve";
@@ -607,5 +607,84 @@ describe("attachments", () => {
     expect(attachmentMarkdown("assets/p.png", "p")).toBe("![](assets/p.png)");
     expect(attachmentMarkdown("assets/Voice memo.webm", "Voice memo")).toBe("![Voice memo](assets/Voice%20memo.webm)");
     expect(attachmentMarkdown("../assets/d.pdf", "Doc")).toBe("[Doc](../assets/d.pdf)");
+  });
+});
+
+import { COMMAND_TIMEOUT_MS, PluginHost, sha256Hex, type HostApi, type WorkerLike } from "./plugins/host";
+
+describe("plugin host", () => {
+  class FakeWorker implements WorkerLike {
+    sent: Record<string, unknown>[] = [];
+    source = "";
+    terminated = false;
+    onmessage: ((e: { data: unknown }) => void) | null = null;
+    onerror: ((e: unknown) => void) | null = null;
+    postMessage(m: unknown) { this.sent.push(m as Record<string, unknown>); }
+    terminate() { this.terminated = true; }
+    emit(data: unknown) { this.onmessage?.({ data }); }
+  }
+  const setup = () => {
+    const writes: [string, string][] = [];
+    const toasts: string[] = [];
+    const fails: string[] = [];
+    const api: HostApi = {
+      listNotes: () => [{ path: "a.md", title: "A" }],
+      readNote: (p) => (p === "a.md" ? "hello" : null),
+      writeNote: (p, c) => void writes.push([p, c]),
+      createNote: async (n) => `${n}.md`,
+      openNote: () => {},
+      prompt: async () => "typed",
+      toast: (m) => void toasts.push(m),
+    };
+    const w = new FakeWorker();
+    const cmds: string[] = [];
+    const host = new PluginHost("demo", "bm.toast('hi')", api, (src) => { w.source = src; return w; }, (c) => cmds.push(c.id), (m) => fails.push(m));
+    host.start();
+    return { w, host, writes, toasts, fails, cmds };
+  };
+
+  it("loads the plugin after the bootstrap with no network and the bm api", () => {
+    const { w } = setup();
+    expect(w.source).toContain("self.bm = Object.freeze");
+    expect(w.source).toContain('"fetch"');
+    expect(w.source.indexOf("bm.toast('hi')")).toBeGreaterThan(w.source.indexOf("self.bm"));
+  });
+
+  it("registers commands, serves note calls and forwards toasts", async () => {
+    const { w, host, writes, toasts, cmds } = setup();
+    w.emit({ t: "command", id: "go", label: "Go" });
+    w.emit({ t: "command", id: "go", label: "Again" });
+    expect(cmds).toEqual(["go"]);
+    w.emit({ t: "toast", msg: "hello" });
+    expect(toasts).toEqual(["hello"]);
+    w.emit({ t: "call", id: 1, op: "list", args: {} });
+    w.emit({ t: "call", id: 2, op: "read", args: { path: "missing.md" } });
+    w.emit({ t: "call", id: 3, op: "write", args: { path: "a.md", content: "x" } });
+    w.emit({ t: "call", id: 4, op: "nope", args: {} });
+    await new Promise((r) => setTimeout(r, 0));
+    expect(w.sent.find((m) => m.id === 1)!.value).toEqual([{ path: "a.md", title: "A" }]);
+    expect(w.sent.find((m) => m.id === 2)!.error).toBe("No such note");
+    expect(writes).toEqual([["a.md", "x"]]);
+    expect(w.sent.find((m) => m.id === 4)!.error).toBe("Unknown call");
+    const p = host.run("go");
+    const run = w.sent.find((m) => m.t === "run")!;
+    w.emit({ t: "done", rid: run.rid });
+    await expect(p).resolves.toBeUndefined();
+  });
+
+  it("stops a plugin whose command never finishes", async () => {
+    vi.useFakeTimers();
+    const { w, host, fails } = setup();
+    const p = host.run("slow");
+    p.catch(() => {});
+    vi.advanceTimersByTime(COMMAND_TIMEOUT_MS + 1);
+    await expect(p).rejects.toThrow("timeout");
+    expect(w.terminated).toBe(true);
+    expect(fails[0]).toContain("longer than 10s");
+    vi.useRealTimers();
+  });
+
+  it("hashes code for approval", async () => {
+    expect(await sha256Hex("abc")).toBe("ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad");
   });
 });
