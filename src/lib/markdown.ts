@@ -124,6 +124,21 @@ function rehypeNoteFeatures(opts: RehypeOpts) {
           else delete node.properties.src;
         }
         node.properties.loading = "lazy";
+        const shown = typeof node.properties.src === "string" ? node.properties.src : "";
+        if (/\.(mp3|wav|ogg|oga|opus|m4a|aac|webm|flac)(\?|#|$)/i.test(shown)) {
+          // `![](x.mp3)` is a player, not a picture.
+          node.tagName = "audio";
+          node.properties = { src: shown, controls: true, preload: "metadata", "data-name": String(node.properties.alt ?? "") };
+          node.children = [];
+        }
+      }
+      if (node.tagName === "a" && typeof node.properties?.href === "string" && /\.(pdf|mp3|wav|ogg|oga|opus|m4a|aac|webm|flac)([?#].*)?$/i.test(node.properties.href) && !/^[a-z][a-z0-9+.-]*:/i.test(node.properties.href)) {
+        const href = safeDecode(node.properties.href.split(/[?#]/)[0] ?? "");
+        const resolved = href.startsWith("/") ? href.slice(1) : resolveRelative(noteDir, href);
+        if (resolved) {
+          node.properties["data-attachment"] = resolved;
+          node.properties.className = ["attachment"];
+        }
       }
       if (/^h[1-6]$/.test(node.tagName)) node.properties = { ...node.properties, "data-heading": slugHeading(hastText(node)) };
       if (node.tagName === "a" && typeof node.properties?.href === "string" && node.properties.href.startsWith("#wiki:")) {

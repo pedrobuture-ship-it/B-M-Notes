@@ -61,6 +61,8 @@ export function getCommands(): Command[] {
     { id: "go-timeline", label: "Open timeline", run: () => ui().setView("timeline") },
     { id: "go-graph", label: "Explore graph", run: () => ui().setSidebarTab("explore") },
     { id: "new-from-template", label: "New note from template…", run: () => ui().setDialog("templates") },
+    { id: "record", label: "Record audio into this note…", run: () => { if (ui().view === "note" && ui().activeNote) ui().setDialog("record"); } },
+    { id: "table", label: "Edit table at cursor / insert table…", hint: "Ctrl Alt T", run: () => ui().setDialog("table") },
     { id: "calendar", label: "Open calendar", run: () => ui().setDialog("calendar") },
     { id: "tasks", label: "Open tasks", run: () => ui().setDialog("tasks") },
     { id: "backup", label: "Back up now", run: () => void runBackup() },

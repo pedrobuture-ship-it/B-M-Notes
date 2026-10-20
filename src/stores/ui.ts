@@ -3,7 +3,7 @@ import { create } from "zustand";
 export type SidebarTab = "notes" | "tags" | "files" | "explore";
 export type MainView = "board" | "graph" | "note" | "timeline";
 export type NoteMode = "edit" | "preview" | "split";
-export type DialogName = "palette" | "search" | "shortcuts" | "settings" | "about" | "trash" | "templates" | "tasks" | "properties" | "health" | "mindmap" | "calendar" | null;
+export type DialogName = "palette" | "search" | "shortcuts" | "settings" | "about" | "trash" | "templates" | "tasks" | "properties" | "health" | "mindmap" | "calendar" | "table" | "record" | null;
 
 export interface Toast {
   id: number;

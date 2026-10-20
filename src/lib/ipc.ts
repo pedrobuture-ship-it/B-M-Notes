@@ -98,6 +98,7 @@ export const ipc = {
     const res = await saveDialog({ defaultPath, filters: [{ name: extension.toUpperCase(), extensions: [extension] }] });
     return typeof res === "string" ? res : null;
   },
+  openAttachment: (path: string) => call<void>("open_attachment", { path }),
   readAssetDataUri: (path: string) => call<string>("read_asset_data_uri", { path }),
   writeExport: (dest: string, content: string) => call<void>("write_export", { dest, content }),
   absolutePath: (path: string) => call<string>("absolute_path", { path }),

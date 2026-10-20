@@ -1,6 +1,7 @@
 import { useEffect, useRef } from "react";
 import { autocompletion } from "@codemirror/autocomplete";
 import { wikiCompletions } from "./wikiComplete";
+import { editorBridge } from "./editorBridge";
 import { Compartment, EditorSelection, EditorState } from "@codemirror/state";
 import { EditorView, drawSelection, highlightActiveLine, keymap, lineNumbers, placeholder } from "@codemirror/view";
 import { defaultKeymap, history, historyKeymap, indentWithTab } from "@codemirror/commands";
@@ -8,7 +9,7 @@ import { HighlightStyle, syntaxHighlighting, indentOnInput } from "@codemirror/l
 import { markdown, markdownLanguage } from "@codemirror/lang-markdown";
 import { languages } from "@codemirror/language-data";
 import { tags as t } from "@lezer/highlight";
-import { importImage, isSupportedImage, pastedName } from "@/lib/images";
+import { importAttachment, isSupportedAttachment, pastedName } from "@/lib/images";
 import { useUi } from "@/stores/ui";
 
 const highlight = HighlightStyle.define([
@@ -153,7 +154,7 @@ export function MarkdownEditor({ docKey, value, revision, onChange, options, com
       const parts: string[] = [];
       for (const f of files) {
         try {
-          parts.push(await importImage(docKey, f, f.name && !/^image\.\w+$/.test(f.name) ? f.name : pastedName(f)));
+          parts.push(await importAttachment(docKey, f, f.name && !/^image\.\w+$/.test(f.name) ? f.name : pastedName(f)));
         } catch (e) {
           useUi.getState().toast(e instanceof Error ? e.message : String(e), "error");
         }
@@ -187,6 +188,7 @@ export function MarkdownEditor({ docKey, value, revision, onChange, options, com
             { key: "Mod-Shift-c", run: (v) => wrap(v, "`") },
             { key: "Mod-Shift-l", run: link },
             { key: "Mod-Shift-t", run: toggleTask },
+            { key: "Mod-Alt-t", run: () => (useUi.getState().setDialog("table"), true) },
             { key: "Mod-Alt-1", run: heading(1) },
             { key: "Mod-Alt-2", run: heading(2) },
             { key: "Mod-Alt-3", run: heading(3) },
@@ -203,6 +205,10 @@ export function MarkdownEditor({ docKey, value, revision, onChange, options, com
             }
           }),
           EditorView.domEventHandlers({
+            focus(_e, v) {
+              editorBridge.set(v);
+              return false;
+            },
             paste(e, v) {
               const files = [...(e.clipboardData?.files ?? [])].filter((f) => f.type.startsWith("image/"));
               if (files.length === 0) return false; // plain text: CodeMirror pastes normally
@@ -211,7 +217,7 @@ export function MarkdownEditor({ docKey, value, revision, onChange, options, com
               return true;
             },
             drop(e, v) {
-              const files = [...(e.dataTransfer?.files ?? [])].filter(isSupportedImage);
+              const files = [...(e.dataTransfer?.files ?? [])].filter(isSupportedAttachment);
               if (files.length === 0) return false;
               e.preventDefault();
               void insertImages(v, files, v.posAtCoords({ x: e.clientX, y: e.clientY }) ?? undefined);
@@ -222,11 +228,13 @@ export function MarkdownEditor({ docKey, value, revision, onChange, options, com
       }),
     });
     viewRef.current = view;
+    editorBridge.set(view);
     if (autoFocus) {
       view.focus();
       view.dispatch({ selection: { anchor: view.state.doc.length } });
     }
     return () => {
+      editorBridge.clear(view);
       view.destroy();
       viewRef.current = null;
     };

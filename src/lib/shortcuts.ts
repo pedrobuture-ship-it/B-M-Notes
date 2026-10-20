@@ -103,6 +103,7 @@ export const SHORTCUTS: ShortcutDef[] = [
   { keys: "Ctrl + Shift + C", label: "Inline code", group: "Editor" },
   { keys: "Ctrl + Shift + L", label: "Insert link", group: "Editor" },
   { keys: "Ctrl + Shift + T", label: "Toggle task checkbox", group: "Editor" },
+  { keys: "Ctrl + Alt + T", label: "Edit table as a grid", group: "Editor" },
   { keys: "Ctrl + Alt + 1-3", label: "Heading 1-3", group: "Editor" },
   { keys: "Ctrl + V", label: "Paste an image (saved to assets/)", group: "Editor" },
 ];

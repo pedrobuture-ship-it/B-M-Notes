@@ -213,8 +213,12 @@ pub fn save_asset(root: &Path, assets_dir: &str, file_name: &str, bytes: &[u8]) 
         .and_then(|e| e.to_str())
         .map(|e| e.to_ascii_lowercase())
         .unwrap_or_default();
-    if !matches!(ext.as_str(), "png" | "jpg" | "jpeg" | "webp" | "gif") {
-        return Err("Unsupported image type".into());
+    const MAX_ATTACHMENT: usize = 25 * 1024 * 1024;
+    if !matches!(ext.as_str(), "png" | "jpg" | "jpeg" | "webp" | "gif" | "pdf" | "mp3" | "wav" | "ogg" | "oga" | "opus" | "m4a" | "aac" | "webm" | "flac") {
+        return Err("Unsupported file type".into());
+    }
+    if bytes.len() > MAX_ATTACHMENT {
+        return Err("File is too large (25 MB maximum)".into());
     }
     let stem = Path::new(file_name)
         .file_stem()
@@ -427,6 +431,8 @@ mod tests {
         assert_eq!(a, "assets/My-Shot.png");
         assert_eq!(b, "assets/My-Shot-2.png");
         assert!(save_asset(&root, "assets", "x.exe", b"1").is_err());
+        assert_eq!(save_asset(&root, "assets", "Voice memo.WEBM", b"1").unwrap(), "assets/Voice-memo.webm");
+        assert_eq!(save_asset(&root, "assets", "doc.pdf", b"%PDF").unwrap(), "assets/doc.pdf");
         assert!(save_asset(&root, "../out", "x.png", b"1").is_err());
     }
 }

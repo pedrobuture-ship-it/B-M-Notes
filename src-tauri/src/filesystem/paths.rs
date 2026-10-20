@@ -89,6 +89,23 @@ pub fn image_mime(path: &Path) -> Option<&'static str> {
     }
 }
 
+/// Mime type for files the app may embed or open from a note: images, PDFs and audio.
+pub fn attachment_mime(path: &Path) -> Option<&'static str> {
+    if let Some(m) = image_mime(path) {
+        return Some(m);
+    }
+    match path.extension()?.to_str()?.to_ascii_lowercase().as_str() {
+        "pdf" => Some("application/pdf"),
+        "mp3" => Some("audio/mpeg"),
+        "wav" => Some("audio/wav"),
+        "ogg" | "oga" | "opus" => Some("audio/ogg"),
+        "m4a" | "aac" => Some("audio/mp4"),
+        "webm" => Some("audio/webm"),
+        "flac" => Some("audio/flac"),
+        _ => None,
+    }
+}
+
 /// Returns `name` or `name 2`, `name 3`… so that it does not collide in `dir`.
 pub fn unique_name(dir: &Path, stem: &str, ext: &str) -> String {
     let make = |n: u32| {

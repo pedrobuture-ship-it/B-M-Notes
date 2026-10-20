@@ -563,3 +563,49 @@ describe("dates", () => {
     expect(monthGrid(2026, 2, 1)[0]!.slice(0, 6).every((c) => c === null)).toBe(true); // March 1st 2026 is a Sunday: last column on a Monday-first grid
   });
 });
+
+import { emptyTable, findTableAt, parseTable, serializeTable } from "./mdTable";
+
+describe("markdown tables", () => {
+  const md = "| Name | Qty | Note |\n|:--|--:|:-:|\n| apple | 3 | a \\| b |\n| pear | 10 | |";
+  it("parses cells, alignment and escaped pipes", () => {
+    const t = parseTable(md)!;
+    expect(t.header).toEqual(["Name", "Qty", "Note"]);
+    expect(t.align).toEqual(["left", "right", "center"]);
+    expect(t.rows).toEqual([["apple", "3", "a \\| b"], ["pear", "10", ""]]);
+    expect(parseTable("just text")).toBeNull();
+  });
+  it("round-trips through serialize with aligned columns", () => {
+    const t = parseTable(md)!;
+    const out = serializeTable(t);
+    expect(parseTable(out)).toEqual(t);
+    expect(out.split("\n").every((l) => l.length === out.split("\n")[0]!.length)).toBe(true);
+    expect(parseTable(serializeTable(emptyTable()))!.rows.length).toBe(2);
+  });
+  it("finds the table around the cursor", () => {
+    const doc = "intro\n\n" + md + "\n\nafter | not a table";
+    const pos = doc.indexOf("apple");
+    const f = findTableAt(doc, pos)!;
+    expect(f.text).toBe(md);
+    expect(doc.slice(f.from, f.to)).toBe(md);
+    expect(findTableAt(doc, 2)).toBeNull();
+    expect(findTableAt(doc, doc.indexOf("after"))).toBeNull();
+  });
+});
+
+import { attachmentMarkdown } from "./images";
+
+describe("attachments", () => {
+  it("renders audio as a player and pdf as an openable link", () => {
+    const html = renderMarkdown("![clip](sub/a%20b.mp3)\n\n[Doc](../d.pdf)\n\n![pic](p.png)", { notePath: "n/x.md" });
+    expect(html).toContain("<audio");
+    expect(html).toContain("controls");
+    expect(html).toContain('data-attachment="d.pdf"');
+    expect(html).toContain("<img");
+  });
+  it("builds the right markdown per file type", () => {
+    expect(attachmentMarkdown("assets/p.png", "p")).toBe("![](assets/p.png)");
+    expect(attachmentMarkdown("assets/Voice memo.webm", "Voice memo")).toBe("![Voice memo](assets/Voice%20memo.webm)");
+    expect(attachmentMarkdown("../assets/d.pdf", "Doc")).toBe("[Doc](../assets/d.pdf)");
+  });
+});

@@ -8,7 +8,22 @@ mod watcher;
 use filesystem::{paths, AppState};
 use tauri::http::{Response, StatusCode};
 
-fn serve_asset(app: &tauri::AppHandle, uri: &str) -> Response<Vec<u8>> {
+/// Parses `bytes=a-b`, `bytes=a-` or `bytes=-n` against a file of `len` bytes into an inclusive (start, end).
+fn parse_range(header: &str, len: u64) -> Option<(u64, u64)> {
+    let spec = header.strip_prefix("bytes=")?.split(',').next()?.trim();
+    let (a, b) = spec.split_once('-')?;
+    let (start, end) = if a.is_empty() {
+        let n: u64 = b.parse().ok()?;
+        (len.saturating_sub(n), len.checked_sub(1)?)
+    } else {
+        let start: u64 = a.parse().ok()?;
+        let end = if b.is_empty() { len.checked_sub(1)? } else { b.parse::<u64>().ok()?.min(len.checked_sub(1)?) };
+        (start, end)
+    };
+    (start <= end && end < len).then_some((start, end))
+}
+
+fn serve_asset(app: &tauri::AppHandle, uri: &str, range: Option<&str>) -> Response<Vec<u8>> {
     use tauri::Manager;
     let fail = |code: StatusCode| Response::builder().status(code).body(Vec::new()).unwrap();
     let state = app.state::<AppState>();
@@ -19,13 +34,28 @@ fn serve_asset(app: &tauri::AppHandle, uri: &str) -> Response<Vec<u8>> {
     let path_part = path_part.split(['?', '#']).next().unwrap_or("");
     let rel = percent_decode(path_part);
     let Ok(abs) = paths::safe_join(&root, &rel) else { return fail(StatusCode::FORBIDDEN) };
-    let Some(mime) = paths::image_mime(&abs) else { return fail(StatusCode::FORBIDDEN) };
+    let Some(mime) = paths::attachment_mime(&abs) else { return fail(StatusCode::FORBIDDEN) };
     match std::fs::read(&abs) {
-        Ok(bytes) => Response::builder()
-            .header("Content-Type", mime)
-            .header("Access-Control-Allow-Origin", "*")
-            .body(bytes)
-            .unwrap(),
+        Ok(bytes) => {
+            let len = bytes.len() as u64;
+            // Audio needs byte ranges to seek.
+            if let Some((start, end)) = range.and_then(|r| parse_range(r, len)) {
+                return Response::builder()
+                    .status(StatusCode::PARTIAL_CONTENT)
+                    .header("Content-Type", mime)
+                    .header("Accept-Ranges", "bytes")
+                    .header("Content-Range", format!("bytes {start}-{end}/{len}"))
+                    .header("Access-Control-Allow-Origin", "*")
+                    .body(bytes[start as usize..=end as usize].to_vec())
+                    .unwrap();
+            }
+            Response::builder()
+                .header("Content-Type", mime)
+                .header("Accept-Ranges", "bytes")
+                .header("Access-Control-Allow-Origin", "*")
+                .body(bytes)
+                .unwrap()
+        }
         Err(_) => fail(StatusCode::NOT_FOUND),
     }
 }
@@ -56,7 +86,7 @@ pub fn run() {
         .plugin(tauri_plugin_opener::init())
         .manage(AppState::default())
         .register_uri_scheme_protocol("mural", |ctx, request| {
-            serve_asset(ctx.app_handle(), &request.uri().to_string())
+            serve_asset(ctx.app_handle(), &request.uri().to_string(), request.headers().get("range").and_then(|v| v.to_str().ok()))
         })
         .invoke_handler(tauri::generate_handler![
             commands::open_workspace,
@@ -78,6 +108,7 @@ pub fn run() {
             commands::absolute_path,
             commands::read_asset_data_uri,
             commands::write_export,
+            commands::open_attachment,
             commands::read_meta,
             commands::write_meta,
             commands::delete_meta,
@@ -103,6 +134,19 @@ pub fn run() {
 #[cfg(test)]
 mod tests {
     use super::percent_decode;
+
+    #[test]
+    fn parses_byte_ranges() {
+        use super::parse_range;
+        assert_eq!(parse_range("bytes=0-9", 100), Some((0, 9)));
+        assert_eq!(parse_range("bytes=90-", 100), Some((90, 99)));
+        assert_eq!(parse_range("bytes=-10", 100), Some((90, 99)));
+        assert_eq!(parse_range("bytes=50-500", 100), Some((50, 99)));
+        assert_eq!(parse_range("bytes=100-", 100), None);
+        assert_eq!(parse_range("bytes=9-0", 100), None);
+        assert_eq!(parse_range("items=0-1", 100), None);
+        assert_eq!(parse_range("bytes=0-1", 0), None);
+    }
 
     #[test]
     fn decodes_percent_sequences() {

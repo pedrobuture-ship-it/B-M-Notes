@@ -1,6 +1,7 @@
 import { memo, useEffect, useMemo, useRef, type MouseEvent } from "react";
 import { dayKey } from "@/lib/timeline";
 import { useSettings } from "@/stores/settings";
+import { useUi } from "@/stores/ui";
 import { renderMarkdown } from "@/lib/markdown";
 import { isEncrypted } from "@/lib/crypto";
 import { toggleCheckbox } from "@/lib/markdownText";
@@ -122,7 +123,8 @@ export const Preview = memo(function Preview({ path, content, interactive = true
       e.preventDefault();
       const wiki = a.dataset.wiki;
       const href = a.getAttribute("href") ?? "";
-      if (wiki) void openWikiLink(wiki, a.dataset.headingTarget);
+      if (a.dataset.attachment) void ipc.openAttachment(a.dataset.attachment).catch((err) => useUi.getState().toast(err instanceof Error ? err.message : String(err), "error"));
+      else if (wiki) void openWikiLink(wiki, a.dataset.headingTarget);
       else if (/^(https?:|mailto:)/i.test(href)) void ipc.openExternal(href);
       return;
     }

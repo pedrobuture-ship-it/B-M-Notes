@@ -46,3 +46,5 @@
 .md-prose .mermaid-diagram { margin: 10px 0; overflow-x: auto; }
 .md-prose .mermaid-diagram svg { max-width: 100%; height: auto; }
 .md-prose pre.mermaid-error { border: 2px dashed #a3402b; }
+.md-prose audio { display: block; width: 100%; max-width: 420px; margin: 8px 0; }
+.md-prose a.attachment::before { content: "📎 "; }

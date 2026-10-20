@@ -135,6 +135,17 @@ pub fn read_asset_data_uri(state: State<'_, AppState>, path: String) -> Res<Stri
     Ok(format!("data:{mime};base64,{}", base64::engine::general_purpose::STANDARD.encode(bytes)))
 }
 
+/// Opens a PDF, audio file or image of the workspace with the system's default app. Nothing executable is ever opened.
+#[tauri::command]
+pub fn open_attachment(app: AppHandle, state: State<'_, AppState>, path: String) -> Res<()> {
+    use tauri_plugin_opener::OpenerExt;
+    let abs = paths::safe_join(&state.root()?, &path)?;
+    if paths::attachment_mime(&abs).is_none() || !abs.is_file() {
+        return Err("Only images, PDFs and audio files can be opened".into());
+    }
+    app.opener().open_path(abs.to_string_lossy(), None::<&str>).map_err(|e| e.to_string())
+}
+
 /// Writes an exported `.html` page to a location the user picked in the save dialog.
 #[tauri::command]
 pub fn write_export(dest: String, content: String) -> Res<()> {

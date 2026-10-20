@@ -19,6 +19,8 @@ import { useUi } from "@/stores/ui";
 import { basename } from "@/lib/paths";
 import { ipc } from "@/lib/ipc";
 import { TemplateDialog } from "@/features/templates/TemplateDialog";
+import { RecordDialog } from "@/features/audio/RecordDialog";
+import { TableDialog } from "@/features/tables/TableDialog";
 import { CalendarDialog } from "@/features/calendar/CalendarDialog";
 import { useDueReminder } from "@/features/shell/useDueReminder";
 import { MindMapDialog } from "@/features/mindmap/MindMapDialog";
@@ -133,6 +135,8 @@ export function App() {
       {info && dialog === "health" && <HealthDialog />}
       {info && dialog === "mindmap" && <MindMapDialog />}
       {info && dialog === "calendar" && <CalendarDialog />}
+      {info && dialog === "table" && <TableDialog />}
+      {info && dialog === "record" && <RecordDialog />}
       <ConfirmDialog />
       <ChoiceDialog />
       <PromptDialog />
