@@ -302,3 +302,114 @@ describe("search filters", () => {
     expect(find("https://x")).toEqual([]);
   });
 });
+
+import { rewriteMarkdownLinks, relativePath } from "./mdLinks";
+
+describe("markdown link rename", () => {
+  it("computes relative paths", () => {
+    expect(relativePath("", "a.md")).toBe("a.md");
+    expect(relativePath("docs", "a.md")).toBe("../a.md");
+    expect(relativePath("docs", "docs/x/b.md")).toBe("x/b.md");
+    expect(relativePath("a/b", "a/c/d.md")).toBe("../c/d.md");
+  });
+
+  it("rewrites url, keeps text and title, skips code and external links", () => {
+    const r = rewriteMarkdownLinks('[a](old.md "T") ![i](<my pic.png>) `[c](old.md)` [w](https://x.io/old.md)', (u) => (u === "old.md" ? "new.md" : u === "my pic.png" ? "p.png" : null));
+    expect(r.content).toBe('[a](new.md "T") ![i](<p.png>) `[c](old.md)` [w](https://x.io/old.md)');
+    expect(r.count).toBe(2);
+  });
+
+  it("updates [text](note.md) links when a note is renamed or moved", () => {
+    const notes = { "a.md": "[b](b.md) and [b2](b.md#sec) and [x](docs/c.md)", "b.md": "", "docs/c.md": "[a](../a.md)" };
+    const plan = planLinkUpdates(notes, [["b.md", "sub/beta.md"]]);
+    expect(plan.rewrite(notes["a.md"], "a.md")).toBe("[b](sub/beta.md) and [b2](sub/beta.md#sec) and [x](docs/c.md)");
+    expect(plan.total).toBe(2);
+  });
+
+  it("fixes the links of a note that itself moves", () => {
+    const notes = { "a.md": "[b](b.md) ![p](img/p.png) [ext](https://e.com)", "b.md": "[a](a.md)" };
+    const plan = planLinkUpdates(notes, [["a.md", "docs/a.md"]]);
+    expect(plan.rewrite(notes["a.md"], "docs/a.md")).toBe("[b](../b.md) ![p](../img/p.png) [ext](https://e.com)");
+    expect(plan.rewrite(notes["b.md"], "b.md")).toBe("[a](docs/a.md)");
+  });
+
+  it("does nothing for links that stay valid", () => {
+    const notes = { "docs/a.md": "[b](b.md)", "docs/b.md": "" };
+    expect(planLinkUpdates(notes, [["docs", "docs"]].map(() => ["docs/b.md", "docs/b.md"] as [string, string])).total).toBe(0);
+  });
+});
+
+import { analyzeVault, suggestName } from "./health";
+
+describe("vault health", () => {
+  it("suggests the closest existing name", () => {
+    expect(suggestName("architecure", ["architecture", "ideas"])).toBe("architecture");
+    expect(suggestName("arch", ["architecture", "ideas"])).toBe("architecture");
+    expect(suggestName("zzz", ["architecture", "ideas"])).toBeNull();
+  });
+
+  it("finds broken links, orphans and untitled notes", () => {
+    const notes = {
+      "a.md": "# A\n[[b]] [[architecure]] [[architecure]]",
+      "b.md": "# B\n",
+      "lonely.md": "# Lonely\n",
+      "plain.md": "no heading [[a]]",
+      "architecture.md": "# Architecture\n[[a]]",
+      "templates/t.md": "[[nothing]]",
+    };
+    const idx = buildIndex(Object.entries(notes));
+    const h = analyzeVault(notes, idx);
+    expect(h.broken).toEqual([{ from: "a.md", target: "architecure", suggestion: "architecture" }]);
+    expect(h.orphans).toEqual(["lonely.md"]);
+    expect(h.untitled).toEqual(["plain.md"]);
+  });
+});
+
+import { comboFromEvent, findConflict, formatCombo, isValidCombo, effectiveCombos } from "./shortcuts";
+
+describe("shortcuts", () => {
+  const ev = (key: string, mods: Partial<{ ctrlKey: boolean; metaKey: boolean; altKey: boolean; shiftKey: boolean }> = {}) => ({ key, ctrlKey: false, metaKey: false, altKey: false, shiftKey: false, ...mods });
+  it("normalises key events", () => {
+    expect(comboFromEvent(ev("k", { ctrlKey: true }))).toBe("Ctrl+K");
+    expect(comboFromEvent(ev("K", { metaKey: true, shiftKey: true }))).toBe("Ctrl+Shift+K");
+    expect(comboFromEvent(ev("ArrowLeft", { altKey: true }))).toBe("Alt+ArrowLeft");
+    expect(comboFromEvent(ev("+", { ctrlKey: true, shiftKey: true }))).toBe("Ctrl+=");
+    expect(comboFromEvent(ev("Control", { ctrlKey: true }))).toBe("");
+  });
+  it("validates, formats and detects conflicts", () => {
+    expect(isValidCombo("Ctrl+K")).toBe(true);
+    expect(isValidCombo("K")).toBe(false);
+    expect(isValidCombo("Shift+K")).toBe(false);
+    expect(formatCombo("Alt+ArrowLeft")).toBe("Alt + ←");
+    expect(findConflict({}, "search", "Ctrl+K")?.id).toBe("palette");
+    expect(findConflict({ palette: "Ctrl+J" }, "search", "Ctrl+K")).toBeNull();
+    expect(effectiveCombos({ palette: "Ctrl+J" }).palette).toBe("Ctrl+J");
+  });
+});
+
+import { decryptText, encryptText, isEncrypted } from "./crypto";
+
+describe("note encryption", () => {
+  it("round-trips text, including unicode and newlines", async () => {
+    const plain = "# Segredo\n\nsenha do wifi: ação ✓\n- [ ] item\n";
+    const enc = await encryptText(plain, "correct horse");
+    expect(isEncrypted(enc)).toBe(true);
+    expect(enc).not.toContain("Segredo");
+    expect(await decryptText(enc, "correct horse")).toBe(plain);
+  });
+
+  it("uses a fresh salt and iv each time", async () => {
+    expect(await encryptText("x", "p")).not.toBe(await encryptText("x", "p"));
+  });
+
+  it("rejects a wrong password and tampered or malformed text", async () => {
+    const enc = await encryptText("hello", "pw");
+    await expect(decryptText(enc, "nope")).rejects.toThrow("Wrong password");
+    const lines = enc.trimEnd().split("\n");
+    const last = lines.pop()!;
+    const flipped = last.slice(0, -6) + (last.slice(-6, -5) === "A" ? "B" : "A") + last.slice(-5);
+    await expect(decryptText([...lines, flipped].join("\n"), "pw")).rejects.toThrow("Wrong password");
+    await expect(decryptText(enc.replace(last, "not base64!!"), "pw")).rejects.toThrow("Wrong password");
+    await expect(decryptText("plain text", "pw")).rejects.toThrow("not encrypted");
+  });
+});

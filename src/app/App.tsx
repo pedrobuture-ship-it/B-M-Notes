@@ -19,9 +19,11 @@ import { useUi } from "@/stores/ui";
 import { basename } from "@/lib/paths";
 import { ipc } from "@/lib/ipc";
 import { TemplateDialog } from "@/features/templates/TemplateDialog";
+import { HealthDialog } from "@/features/health/HealthDialog";
 import { PropertiesDialog } from "@/features/properties/PropertiesDialog";
 import { TasksDialog } from "@/features/tasks/TasksDialog";
 import { TrashDialog } from "@/features/trash/TrashDialog";
+import { useAutoBackup } from "@/features/shell/useAutoBackup";
 import { useAutoSync } from "@/features/shell/useAutoSync";
 
 function MainArea() {
@@ -84,6 +86,7 @@ export function App() {
   }, [appearance]);
 
   useAutoSync();
+  useAutoBackup();
 
   // Flush pending saves when the window is closing / hidden.
   useEffect(() => {
@@ -117,6 +120,7 @@ export function App() {
       {info && dialog === "templates" && <TemplateDialog />}
       {info && dialog === "tasks" && <TasksDialog />}
       {info && dialog === "properties" && <PropertiesDialog />}
+      {info && dialog === "health" && <HealthDialog />}
       <ConfirmDialog />
       <ChoiceDialog />
       <PromptDialog />

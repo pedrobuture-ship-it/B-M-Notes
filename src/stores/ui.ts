@@ -39,6 +39,8 @@ interface PromptReq {
   label?: string;
   initial?: string;
   confirmLabel?: string;
+  /** Hide what is typed (passwords). */
+  secret?: boolean;
   resolve: (value: string | null) => void;
 }
 

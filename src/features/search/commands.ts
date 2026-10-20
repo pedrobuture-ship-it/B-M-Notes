@@ -1,6 +1,7 @@
 import { ipc } from "@/lib/ipc";
-import { newNote, revealInFolder, togglePin } from "@/lib/actions";
+import { lockNote, newNote, revealInFolder, togglePin } from "@/lib/actions";
 import { useSettings } from "@/stores/settings";
+import { runBackup } from "@/lib/backup";
 import { boardCommand } from "@/features/board/boardBus";
 import { useUi } from "@/stores/ui";
 import { useWorkspace } from "@/stores/workspace";
@@ -58,7 +59,10 @@ export function getCommands(): Command[] {
     { id: "go-graph", label: "Explore graph", run: () => ui().setSidebarTab("explore") },
     { id: "new-from-template", label: "New note from template…", run: () => ui().setDialog("templates") },
     { id: "tasks", label: "Open tasks", run: () => ui().setDialog("tasks") },
+    { id: "backup", label: "Back up now", run: () => void runBackup() },
+    { id: "health", label: "Check notes health (broken links, orphans)", run: () => ui().setDialog("health") },
     { id: "properties", label: "Open properties table", run: () => ui().setDialog("properties") },
+    { id: "encrypt", label: "Encrypt this note with a password…", run: () => { if (ui().view === "note" && ui().activeNote) void lockNote(ui().activeNote!); } },
     { id: "pin", label: "Pin / unpin this note", run: () => { if (ui().view === "note" && ui().activeNote) togglePin(ui().activeNote!); } },
     { id: "back", label: "Go back", hint: "Alt ←", run: () => ui().goBack() },
     { id: "forward", label: "Go forward", hint: "Alt →", run: () => ui().goForward() },

@@ -71,12 +71,19 @@ images, live watcher updates verified by editing files from outside). Release bu
 
 ## 5. Known gaps / future improvements
 
-- Renaming/moving a note offers to rewrite `[[links]]` in other notes (**done**); plain Markdown links `[text](note.md)` are not rewritten yet.
+- Renaming/moving a note offers to rewrite `[[links]]` and relative `[text](note.md)` links (**done**).
 - Delete now moves to `.mural/trash/` with restore and configurable retention (**done**).
 - Light theme (**done**).
 - Only the Linux bundle was built and run here; Windows/macOS configs are standard Tauri but untested.
-- Embeds (`![[note]]`), heading links and aliases in the graph are not supported.
+- Embeds (`![[note]]`) and `[[note#heading]]` links are supported in the preview; aliases and headings are not drawn in the graph.
 - Canvas keyboard accessibility is limited to what React Flow provides (focusable nodes); a full keyboard
   navigation model for the mural would be a good next step.
 - Conflict banner exists on the note page; a card being edited in place only gets a toast.
 - Frontend bundle is ~1 MB (CodeMirror language data); could be split with dynamic imports.
+
+## 6. Notes on later additions
+
+- **Encrypted notes** use AES-GCM with a PBKDF2-SHA256 key (600k iterations). While a note is locked it is not indexed
+  (no title, tags or links in the graph). Unlocking writes plain text to disk until "Lock again". Lost passwords are unrecoverable.
+- **Extra murals** have no automatic file snapshots (only the main `board.json` does); with GitHub sync, Git is the history.
+- **Backups** are plain ZIPs (not encrypted); the trash, `.git` and `node_modules` are skipped.

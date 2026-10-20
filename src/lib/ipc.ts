@@ -49,6 +49,12 @@ export interface TrashItem {
   deletedAt: number;
 }
 
+export interface BackupResult {
+  path: string;
+  files: number;
+  bytes: number;
+}
+
 export interface MetaRead {
   content: string | null;
   backup: string | null;
@@ -104,6 +110,8 @@ export const ipc = {
   githubLogout: () => call<void>("github_logout"),
   githubListRepos: () => call<GithubRepo[]>("github_list_repos"),
   githubCreateRepo: (name: string, isPrivate: boolean) => call<GithubRepo>("github_create_repo", { name, private: isPrivate }),
+  backupNow: (dest: string, stamp: string, keep: number) => call<BackupResult>("backup_now", { dest, stamp, keep }),
+  backupNewest: (dest: string) => call<number | null>("backup_newest", { dest }),
   syncStatus: () => call<SyncInfo>("sync_status"),
   syncLink: (url: string) => call<SyncInfo>("sync_link", { url }),
   syncNow: () => call<SyncInfo>("sync_now"),

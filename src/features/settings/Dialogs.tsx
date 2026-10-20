@@ -1,11 +1,13 @@
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { Row, Toggle } from "./controls";
 import { SyncPanel } from "./SyncPanel";
+import { BackupPanel } from "./BackupPanel";
 import { Dialog } from "@/components/Dialogs";
 import { useSettings } from "@/stores/settings";
 import { useUi } from "@/stores/ui";
 import { useWorkspace } from "@/stores/workspace";
-import { SHORTCUTS } from "@/lib/shortcuts";
+import { SHORTCUTS, effectiveCombos, formatCombo } from "@/lib/shortcuts";
+import { ShortcutsSettings } from "./ShortcutsSettings";
 import { ipc, type GithubDevice, type GithubUser } from "@/lib/ipc";
 import { LogoMark } from "@/components/doodles";
 
@@ -15,6 +17,7 @@ function NumberField({ value, min, max, step = 1, onChange, label }: { value: nu
 
 export function ShortcutsList() {
   const groups = ["General", "Mural", "Editor"] as const;
+  const eff = effectiveCombos(useSettings((s) => s.settings.shortcuts));
   return (
     <div className="overflow-auto px-5 pb-5" style={{ maxHeight: "60vh" }}>
       {groups.map((g) => (
@@ -23,7 +26,7 @@ export function ShortcutsList() {
           {SHORTCUTS.filter((s) => s.group === g).map((s) => (
             <div key={s.keys + s.label} className="shortcut-row">
               <span>{s.label}</span>
-              <span className="kbd">{s.keys}</span>
+              <span className="kbd">{s.action ? formatCombo(eff[s.action]) : s.keys}</span>
             </div>
           ))}
         </div>
@@ -113,7 +116,7 @@ function GithubConnect({ children }: { children?: ReactNode }) {
   );
 }
 
-const SECTIONS = ["Appearance", "Editor", "Files", "Daily Notes", "Board", "Sync", "Keyboard"] as const;
+const SECTIONS = ["Appearance", "Editor", "Files", "Daily Notes", "Board", "Sync", "Backup", "Keyboard"] as const;
 
 export function SettingsDialog() {
   const setDialog = useUi((s) => s.setDialog);
@@ -195,8 +198,9 @@ export function SettingsDialog() {
               <Row title="Show connections" hint="Lines drawn from [[wiki links]] and manual links."><Toggle label="Show connections" checked={settings.board.showConnections} onChange={(v) => update((s) => ({ ...s, board: { ...s.board, showConnections: v } }))} /></Row>
             </>
           )}
+          {section === "Backup" && <BackupPanel />}
           {section === "Sync" && <GithubConnect><SyncPanel /></GithubConnect>}
-          {section === "Keyboard" && <div style={{ margin: "-18px -22px" }}><ShortcutsList /></div>}
+          {section === "Keyboard" && <div style={{ margin: "-18px -22px" }}><ShortcutsSettings /><ShortcutsList /></div>}
         </div>
       </div>
       <div className="px-5 py-3" style={{ borderTop: "2px dashed var(--line-soft)", color: "var(--ink-faint)" }}>

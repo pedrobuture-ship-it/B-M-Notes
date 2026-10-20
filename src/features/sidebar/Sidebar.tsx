@@ -8,7 +8,7 @@ import { Menu, useContextMenu, type MenuEntry } from "@/components/Menu";
 import { EmptyFiles, EmptyTags } from "@/components/doodles";
 import { VirtualList } from "@/components/VirtualList";
 import { basename, dirname, stripExt } from "@/lib/paths";
-import { copyPath, deleteEntry, deleteSavedSearch, isPinned, newFolder, newNote, renameEntry, revealInFolder, togglePin } from "@/lib/actions";
+import { copyPath, deleteEntry, deleteSavedSearch, isPinned, lockNote, newFolder, newNote, renameEntry, revealInFolder, togglePin } from "@/lib/actions";
 import { ipc } from "@/lib/ipc";
 import type { TreeNode } from "@/types";
 
@@ -306,6 +306,7 @@ function TreeRow({ node, depth, expanded: isOpen, toggle, expand, openMenu }: It
         { label: isPinned(node.path) ? "Unpin" : "Pin to top", onSelect: () => togglePin(node.path) },
         { label: "Rename", onSelect: () => void renameEntry(node.path, false) },
         { label: "Move to…", onSelect: () => void promptMove(node.path) },
+        { label: "Encrypt with a password…", onSelect: () => void lockNote(node.path) },
         ...useBoard.getState().boards.filter((b) => b.id !== MAIN_BOARD).map((b) => ({ label: `Add to mural: ${b.name}`, onSelect: () => void useBoard.getState().addToBoard(b.id, node.path) })),
         { label: "Reveal in file manager", onSelect: () => void revealInFolder(node.path) },
         { label: "Copy path", onSelect: () => void copyPath(node.path) },

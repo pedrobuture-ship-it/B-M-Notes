@@ -4,7 +4,7 @@ import {
   useReactFlow, useStore, type Connection, type Edge, type EdgeChange, type Node, type NodeChange, type NodeTypes, type EdgeTypes,
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
-import { BoxSelect, Copy, ExternalLink, FilePlus, Frame as FrameIcon, Maximize, Pencil, Trash2 } from "lucide-react";
+import { BoxSelect, Copy, Lock, ExternalLink, FilePlus, Frame as FrameIcon, Maximize, Pencil, Trash2 } from "lucide-react";
 import { useBoard, MAIN_BOARD } from "@/stores/board";
 import { BoardTabs } from "./BoardTabs";
 import { useWorkspace } from "@/stores/workspace";
@@ -16,10 +16,11 @@ import { NoteNode, type NoteNodeData } from "./NoteNode";
 import { FrameNode, type FrameNodeData } from "./FrameNode";
 import { SketchEdge } from "./SketchEdge";
 import { onBoardCommand } from "./boardBus";
-import { copyPath, deleteEntry, removeEdge, duplicateNote, newFrameTitle, revealInFolder } from "@/lib/actions";
+import { copyPath, deleteEntry, lockNote, removeEdge, duplicateNote, newFrameTitle, revealInFolder } from "@/lib/actions";
 import { CARD_COLORS, type CardColor } from "@/types";
 import { CARD_H, CARD_W } from "@/lib/board";
 import { basename, stripExt } from "@/lib/paths";
+import { isEncrypted } from "@/lib/crypto";
 
 const nodeTypes: NodeTypes = { note: NoteNode, frame: FrameNode };
 const edgeTypes: EdgeTypes = { sketch: SketchEdge };
@@ -102,13 +103,14 @@ export function Board() {
     (path: string, x: number, y: number) => {
       const color = useBoard.getState().board.cards[path]?.color;
       const entries: MenuEntry[] = [
-        { label: "Edit here", icon: <Pencil size={15} />, onSelect: () => setEditing(path) },
+        { label: "Edit here", icon: <Pencil size={15} />, onSelect: () => (isEncrypted(useWorkspace.getState().notes[path]?.content ?? "") ? openNote(path) : setEditing(path)) },
         { label: "Open as page", icon: <ExternalLink size={15} />, onSelect: () => openNote(path) },
         { separator: true },
         { label: "Color", heading: true },
         { custom: <Swatches current={color} onPick={(c) => { patchCards({ [path]: { color: c } }); close(); }} /> },
         { separator: true },
         ...boardEntries(path),
+        { label: "Encrypt with a password…", icon: <Lock size={15} />, onSelect: () => void lockNote(path) },
         { label: "Duplicate", icon: <Copy size={15} />, onSelect: () => void duplicateNote(path) },
         { label: "Reveal file", onSelect: () => void revealInFolder(path) },
         { label: "Copy path", onSelect: () => void copyPath(path) },

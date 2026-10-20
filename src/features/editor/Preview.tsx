@@ -1,5 +1,6 @@
 import { memo, useMemo, type MouseEvent } from "react";
 import { renderMarkdown } from "@/lib/markdown";
+import { isEncrypted } from "@/lib/crypto";
 import { toggleCheckbox } from "@/lib/markdownText";
 import { ipc } from "@/lib/ipc";
 import { openWikiLink, resolveWikiTarget } from "@/lib/actions";
@@ -61,10 +62,11 @@ interface Props {
 /** Rendered Markdown. Wiki links open notes; task checkboxes edit the real file. */
 export const Preview = memo(function Preview({ path, content, interactive = true, embeds = false, className = "", onPlainClick }: Props) {
   // Re-render when notes are created/deleted so missing/existing wiki links update.
+  const locked = isEncrypted(content);
   const stamp = useWorkspace((s) => s.index.meta.size);
   // Embedded notes are looked up in the store at render time, so edits to them must re-render this note.
   const embedded = useWorkspace((s) => (embeds && content.includes("![[") ? s.notes : null));
-  const html = useMemo(() => cachedRender(path, content, interactive, stamp, embeds), [path, content, interactive, stamp, embeds, embedded]);
+  const html = useMemo(() => cachedRender(path, locked ? "" : content, interactive, stamp, embeds), [path, content, locked, interactive, stamp, embeds, embedded]);
 
   const onClick = (e: MouseEvent<HTMLDivElement>) => {
     const target = e.target as HTMLElement;
@@ -92,5 +94,6 @@ export const Preview = memo(function Preview({ path, content, interactive = true
     onPlainClick?.(e);
   };
 
+  if (locked) return <p className={`m-0 ${className}`} style={{ opacity: 0.7 }}>🔒 Encrypted note. Open it to unlock.</p>;
   return <div className={`md-prose selectable ${className}`} onClick={onClick} dangerouslySetInnerHTML={{ __html: html }} />;
 });

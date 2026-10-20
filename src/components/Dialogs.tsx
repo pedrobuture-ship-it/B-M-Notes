@@ -110,12 +110,12 @@ export function PromptDialog() {
       <form
         onSubmit={(e) => {
           e.preventDefault();
-          if (value.trim()) resolve(value.trim());
+          if (value.trim()) resolve(req.secret ? value : value.trim());
         }}
       >
         <div className="px-5 pb-2">
           {req.label && <label className="block mb-1" style={{ color: "var(--ink-dim)" }}>{req.label}</label>}
-          <input ref={inputRef} className="field" value={value} onChange={(e) => setValue(e.target.value)} autoFocus spellCheck={false} />
+          <input ref={inputRef} className="field" type={req.secret ? "password" : "text"} autoComplete="off" value={value} onChange={(e) => setValue(e.target.value)} autoFocus spellCheck={false} />
         </div>
         <div className="flex justify-end gap-2 px-5 py-4">
           <button type="button" className="btn" onClick={() => resolve(null)}>Cancel</button>

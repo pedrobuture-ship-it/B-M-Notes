@@ -7,6 +7,8 @@ import { basename, dirname, stripExt } from "./paths";
 import { slugify } from "./slug";
 import { slugHeading } from "./headings";
 import { ipc } from "./ipc";
+import { decryptText, encryptText, isEncrypted } from "./crypto";
+import { useLocks } from "@/stores/locks";
 
 export function resolveWikiTarget(target: string): string | null {
   return useWorkspace.getState().index.resolver.resolve(target);
@@ -157,4 +159,58 @@ export async function saveSearch(query: string): Promise<void> {
 
 export function deleteSavedSearch(id: string): void {
   useSettings.getState().update((s) => ({ ...s, search: { saved: s.search.saved.filter((x) => x.id !== id) } }));
+}
+
+/** Encrypts a note with a password the user types twice. The file then holds only ciphertext. */
+export async function lockNote(path: string, knownPassword?: string): Promise<boolean> {
+  const ui = useUi.getState();
+  const ws = useWorkspace.getState();
+  const note = ws.notes[path];
+  if (!note) return false;
+  if (isEncrypted(note.content)) {
+    ui.toast("This note is already encrypted.", "info");
+    return false;
+  }
+  let password = knownPassword;
+  if (!password) {
+    password = (await ui.prompt({ title: "Encrypt note", label: "Password (there is no way to recover it)", confirmLabel: "Next", secret: true })) ?? undefined;
+    if (!password) return false;
+    const again = await ui.prompt({ title: "Encrypt note", label: "Type the password again", confirmLabel: "Encrypt", secret: true });
+    if (again !== password) {
+      if (again !== null) ui.toast("The passwords do not match.", "error");
+      return false;
+    }
+  }
+  try {
+    ws.setContent(path, await encryptText(note.content, password));
+    useLocks.getState().forget(path);
+    await ws.saveNow(path);
+    ui.toast("Note encrypted", "success");
+    return true;
+  } catch (e) {
+    ui.toast(`Could not encrypt: ${e instanceof Error ? e.message : String(e)}`, "error");
+    return false;
+  }
+}
+
+/** Decrypts a note for editing and remembers the password (memory only) so it can be locked again with one click. */
+export async function unlockNote(path: string, password: string): Promise<boolean> {
+  const ws = useWorkspace.getState();
+  const note = ws.notes[path];
+  if (!note) return false;
+  try {
+    const plain = await decryptText(note.content, password);
+    ws.setContent(path, plain);
+    useLocks.getState().remember(path, password);
+    await ws.saveNow(path);
+    return true;
+  } catch (e) {
+    useUi.getState().toast(e instanceof Error ? e.message : String(e), "error");
+    return false;
+  }
+}
+
+/** Encrypts an unlocked note again with the password used to unlock it (asks if it was forgotten). */
+export async function relockNote(path: string): Promise<boolean> {
+  return lockNote(path, useLocks.getState().passwords[path]);
 }

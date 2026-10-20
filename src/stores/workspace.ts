@@ -8,6 +8,7 @@ import type { NoteFile, SaveStatus, TreeNode, WorkspaceInfo } from "@/types";
 import { useBoard } from "./board";
 import { useSettings } from "./settings";
 import { useUi } from "./ui";
+import { useLocks } from "./locks";
 
 export interface NoteState {
   content: string;
@@ -428,7 +429,7 @@ export const useWorkspace = create<WorkspaceState>((set, get) => {
   function applyLinkUpdate(plan: LinkPlan) {
     let changed = 0;
     for (const [p, n] of Object.entries(get().notes)) {
-      const next = plan.rewrite(n.content);
+      const next = plan.rewrite(n.content, p);
       if (next !== n.content) {
         get().setContent(p, next);
         changed++;
@@ -442,6 +443,7 @@ export const useWorkspace = create<WorkspaceState>((set, get) => {
     const remap = (p: string) => (p === from ? to : p.startsWith(from + "/") ? to + p.slice(from.length) : p);
     if (useSettings.getState().settings.nav.pinned.some((p) => remap(p) !== p)) useSettings.getState().update((s) => ({ ...s, nav: { pinned: s.nav.pinned.map(remap) } }));
     useUi.getState().remapRecent(remap);
+    useLocks.getState().remap(remap);
     const notes: Record<string, NoteState> = {};
     for (const [p, n] of Object.entries(get().notes)) {
       if (p === from) notes[to] = n;

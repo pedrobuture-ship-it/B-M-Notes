@@ -10,6 +10,7 @@ import { Preview } from "@/features/editor/Preview";
 import { basename, stripExt } from "@/lib/paths";
 import { hashUnit } from "@/lib/board";
 import { renameNoteFromTitle } from "@/lib/actions";
+import { isEncrypted } from "@/lib/crypto";
 import type { CardColor } from "@/types";
 
 export interface NoteNodeData extends Record<string, unknown> {
@@ -89,7 +90,8 @@ export const NoteNode = memo(function NoteNode({ data, selected, dragging }: Nod
       onDoubleClick={(e) => {
         if ((e.target as HTMLElement).closest(".note-head")) return;
         e.stopPropagation();
-        setEditing(path);
+        if (isEncrypted(note.content)) useUi.getState().openNote(path);
+        else setEditing(path);
       }}
       onContextMenu={(e) => {
         e.preventDefault();

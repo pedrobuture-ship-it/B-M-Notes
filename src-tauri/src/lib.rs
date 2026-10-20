@@ -1,3 +1,4 @@
+mod backup;
 mod commands;
 mod filesystem;
 mod github;
@@ -78,6 +79,8 @@ pub fn run() {
             commands::read_meta,
             commands::write_meta,
             commands::delete_meta,
+            backup::backup_now,
+            backup::backup_newest,
             commands::launch_path,
             github::github_login_start,
             github::github_login_poll,

@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { ArrowLeft, Link2, Check, CircleAlert, Loader2, Pin, PinOff } from "lucide-react";
-import { togglePin } from "@/lib/actions";
+import { ArrowLeft, Link2, Check, CircleAlert, Loader2, Lock, LockOpen, Pin, PinOff } from "lucide-react";
+import { lockNote, relockNote, togglePin, unlockNote } from "@/lib/actions";
+import { isEncrypted } from "@/lib/crypto";
+import { useLocks } from "@/stores/locks";
 import { useWorkspace } from "@/stores/workspace";
 import { useSettings } from "@/stores/settings";
 import { useUi, type NoteMode } from "@/stores/ui";
@@ -24,6 +26,30 @@ export function SaveIndicator() {
   );
 }
 
+/** Shown instead of the editor while a note is encrypted. */
+function LockedView({ path }: { path: string }) {
+  const [pw, setPw] = useState("");
+  const [busy, setBusy] = useState(false);
+  const submit = async () => {
+    if (!pw) return;
+    setBusy(true);
+    const ok = await unlockNote(path, pw);
+    setBusy(false);
+    if (ok) setPw("");
+  };
+  return (
+    <div className="empty h-full">
+      <Lock size={42} style={{ color: "var(--amber)" }} />
+      <p className="hand">This note is encrypted.</p>
+      <form className="flex gap-2" onSubmit={(e) => { e.preventDefault(); void submit(); }}>
+        <input className="field" type="password" autoFocus autoComplete="off" placeholder="Password" aria-label="Password" value={pw} onChange={(e) => setPw(e.target.value)} />
+        <button className="btn btn-primary" type="submit" disabled={busy || !pw}>{busy ? "Unlocking…" : "Unlock"}</button>
+      </form>
+      <small style={{ color: "var(--ink-faint)", maxWidth: 360, textAlign: "center" }}>Unlocking turns the file back into plain text until you lock it again. Lost passwords cannot be recovered.</small>
+    </div>
+  );
+}
+
 export function NotePane({ path }: { path: string }) {
   const note = useWorkspace((s) => s.notes[path]);
   const setContent = useWorkspace((s) => s.setContent);
@@ -36,6 +62,7 @@ export function NotePane({ path }: { path: string }) {
   const openNote = useUi((s) => s.openNote);
   const setView = useUi((s) => s.setView);
 
+  const unlockedHere = useLocks((s) => path in s.passwords);
   const pinned = useSettings((s) => s.settings.nav.pinned.includes(path));
   const pending = useUi((s) => s.pendingHeading);
   const [jump, setJump] = useState<{ line: number; nonce: number } | null>(null);
@@ -63,6 +90,18 @@ export function NotePane({ path }: { path: string }) {
     );
   }
 
+  if (isEncrypted(note.content)) {
+    return (
+      <div className="note-pane">
+        <div className="note-toolbar">
+          <button className="btn btn-ghost btn-icon" onClick={() => setView("board")} aria-label="Back to mural" data-tip="Back to mural"><ArrowLeft size={16} /></button>
+          <span className="handwritten-label" style={{ fontSize: "1.6rem" }}>{basename(path)}</span>
+        </div>
+        <LockedView path={path} />
+      </div>
+    );
+  }
+
   const modes: { id: NoteMode; label: string }[] = [
     { id: "edit", label: "Edit" },
     { id: "split", label: "Split" },
@@ -76,6 +115,9 @@ export function NotePane({ path }: { path: string }) {
         <span className="handwritten-label" style={{ fontSize: "1.6rem" }}>{basename(path)}</span>
         <div className="flex-1" />
         <SaveIndicator />
+        {unlockedHere
+          ? <button className="btn" onClick={() => void relockNote(path)} data-tip="Encrypt again with the same password"><Lock size={15} /> Lock again</button>
+          : <button className="btn btn-ghost btn-icon" onClick={() => void lockNote(path)} aria-label="Encrypt note" data-tip="Encrypt with a password"><LockOpen size={16} /></button>}
         <button className="btn btn-ghost btn-icon" onClick={() => togglePin(path)} aria-label={pinned ? "Unpin note" : "Pin note"} data-tip={pinned ? "Unpin" : "Pin to top of the sidebar"}>{pinned ? <PinOff size={16} /> : <Pin size={16} />}</button>
         <div className="segmented" role="group" aria-label="View mode">
           {modes.map((m) => (
@@ -90,6 +132,13 @@ export function NotePane({ path }: { path: string }) {
           <span className="flex-1">This file changed on disk while you have unsaved edits.</span>
           <button className="btn" onClick={() => resolveConflict(path, true)}>Keep mine</button>
           <button className="btn" onClick={() => resolveConflict(path, false)}>Load disk version</button>
+        </div>
+      )}
+
+      {unlockedHere && (
+        <div className="banner" role="status">
+          <LockOpen size={16} />
+          <span className="flex-1">Unlocked: the file on disk is plain text until you lock it again.</span>
         </div>
       )}
 

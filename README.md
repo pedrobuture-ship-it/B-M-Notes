@@ -20,6 +20,10 @@ No account, no cloud, no lock-in — everything is plain Markdown on your disk.
 - **Graph view** of every note and link.
 - **Smart rename**: renaming or moving a note shows how many `[[links]]` in other notes would break and offers to update them.
 - **Trash**: deleting moves notes to `.mural/trash/`; restore them or empty the trash from the sidebar. Retention is configurable (default 30 days).
+- **Several murals per folder**: "Main" shows every note; extra murals hold only the notes you add (Delete there never touches files).
+- **Writing**: templates (`templates/` folder + built-ins), `![[embeds]]`, `[[note#Section]]` links, autocomplete after `[[` and `#`, unlinked mentions, a global Tasks view.
+- **Finding things**: saved searches, filters (`tag:`, `path:`, `title:`, any frontmatter property like `status:done`), back/forward (`Alt+←/→`), pinned and recent notes, a Properties table.
+- **Quality & safety**: rename also fixes `[text](note.md)` links, local ZIP backups (optional daily), a notes-health check (broken links, orphans), rebindable shortcuts, password-encrypted notes (AES-GCM).
 - **Light and dark** themes, plus optional **GitHub sync** for sharing a folder.
 - Paste or drop images: they are copied to `assets/` and referenced as normal Markdown.
 
