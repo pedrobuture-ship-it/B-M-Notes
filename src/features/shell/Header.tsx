@@ -8,9 +8,9 @@ export function Header() {
   const toggleSidebar = useUi((s) => s.toggleSidebar);
   return (
     <header className="header">
-      <button className="logo" onClick={toggleSidebar} aria-label="buturenotes — toggle sidebar" data-tip="Toggle sidebar (Ctrl+B)">
+      <button className="logo" onClick={toggleSidebar} aria-label="b&m notes — toggle sidebar" data-tip="Toggle sidebar (Ctrl+B)">
         <LogoMark />
-        <span>buture<b>notes</b></span>
+        <span>b&amp;m <b>notes</b></span>
       </button>
       <button className="search-trigger" onClick={() => setDialog("search")} aria-label="Search notes">
         <Search size={16} />

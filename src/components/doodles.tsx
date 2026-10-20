@@ -5,9 +5,11 @@ type P = SVGProps<SVGSVGElement>;
 export function LogoMark(props: P) {
   return (
     <svg viewBox="0 0 48 48" width="30" height="30" aria-hidden="true" {...props}>
-      <path d="M6 38 L8 10 Q24 7 40 10 L42 37 Q24 41 6 38Z" fill="#efe6d2" stroke="#d9a441" strokeWidth="2.5" strokeLinejoin="round" />
-      <path d="M13 31 V17 L25 31 V17" fill="none" stroke="#1b1714" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
-      <path d="M31 17 V31 M31 17 Q40 17 38 22 Q35 25.5 31 25 M31 25 Q41 25 39 29.5 Q37 33 31 31" fill="none" stroke="#c8553d" strokeWidth="2.8" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M9 5 L12 21 L5 29 L13 33 L12 37 L24 44 L36 37 L35 33 L43 29 L36 21 L39 5 L29 13 Q24 11.5 19 13 Z" fill="#efe6d2" stroke="#d9a441" strokeWidth="2.4" strokeLinejoin="round" strokeLinecap="round"/>
+      <path d="M11.5 11 L14 19 L18 15 Z M36.5 11 L34 19 L30 15 Z" fill="#c8553d" stroke="#c8553d" strokeWidth="1.2" strokeLinejoin="round"/>
+      <path d="M14 24 L20 26 M34 24 L28 26" fill="none" stroke="#1b1714" strokeWidth="3" strokeLinecap="round"/>
+      <path d="M20 31 Q24 29.5 28 31 Q27 35 24 37.5 Q21 35 20 31Z" fill="#1b1714" stroke="#1b1714" strokeWidth="1.6" strokeLinejoin="round"/>
+      <path d="M24 37.5 V40 M20.5 40.5 Q24 42.5 27.5 40.5 M10 29 L15 30 M38 29 L33 30" fill="none" stroke="#1b1714" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
     </svg>
   );
 }

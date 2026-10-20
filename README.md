@@ -1,10 +1,10 @@
-# buturenotes
+# b&m notes
 
 **A local-first spatial Markdown workspace.**
 
 > Your notes are just files.
 
-Pick a folder of `.md` files and buturenotes spreads them out as cards on an infinite, hand-drawn wall.
+Pick a folder of `.md` files and b&m notes spreads them out as cards on an infinite, hand-drawn wall.
 No account, no cloud, no lock-in — everything is plain Markdown on your disk.
 
 ![The mural](docs/screenshots/mural.png)

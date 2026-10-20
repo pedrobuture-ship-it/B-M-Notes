@@ -57,7 +57,7 @@ export function getCommands(): Command[] {
     { id: "go-graph", label: "Explore graph", run: () => ui().setSidebarTab("explore") },
     { id: "settings", label: "Settings", hint: "Ctrl ,", run: () => ui().setDialog("settings") },
     { id: "shortcuts", label: "Keyboard shortcuts", hint: "Ctrl /", run: () => ui().setDialog("shortcuts") },
-    { id: "about", label: "About buturenotes", run: () => ui().setDialog("about") },
+    { id: "about", label: "About b&m notes", run: () => ui().setDialog("about") },
     { id: "close-ws", label: "Close workspace", run: () => void useWorkspace.getState().closeWorkspace() },
   ];
 }

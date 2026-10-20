@@ -136,9 +136,9 @@ export function AboutDialog() {
   const setDialog = useUi((s) => s.setDialog);
   const root = useWorkspace((s) => s.info?.root);
   return (
-    <Dialog title="About buturenotes" onClose={() => setDialog(null)} width={500}>
+    <Dialog title="About b&m notes" onClose={() => setDialog(null)} width={500}>
       <div className="px-5 pb-5 flex flex-col gap-3 selectable">
-        <div className="flex items-center gap-3"><LogoMark width={46} height={46} /><div><div className="handwritten-label" style={{ fontSize: "1.9rem" }}>buturenotes</div><div style={{ color: "var(--ink-dim)" }}>Version 0.1.0 — a local-first spatial Markdown workspace.</div></div></div>
+        <div className="flex items-center gap-3"><LogoMark width={46} height={46} /><div><div className="handwritten-label" style={{ fontSize: "1.9rem" }}>b&amp;m notes</div><div style={{ color: "var(--ink-dim)" }}>Version 0.1.0 — a local-first spatial Markdown workspace.</div></div></div>
         <p className="m-0 handwritten-label" style={{ fontSize: "1.5rem", color: "var(--ink)" }}>Your notes are just files.</p>
         <div className="shortcut-row"><span>Data model</span><span>Plain Markdown + local assets.</span></div>
         <div className="shortcut-row"><span>Mural metadata</span><span className="kbd">.mural/</span></div>
