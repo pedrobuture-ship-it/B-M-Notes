@@ -1,3 +1,4 @@
+import { useTr } from "@/lib/i18n";
 import { useCallback, useEffect, useLayoutEffect, useRef, useState, type ReactNode } from "react";
 
 export interface MenuEntry {
@@ -19,6 +20,7 @@ interface MenuProps {
 
 /** Floating context menu positioned at (x, y), kept inside the viewport. */
 export function Menu({ x, y, entries, onClose }: MenuProps) {
+  const tr = useTr();
   const ref = useRef<HTMLDivElement>(null);
   const [pos, setPos] = useState({ left: x, top: y });
 
@@ -62,7 +64,7 @@ export function Menu({ x, y, entries, onClose }: MenuProps) {
         e.separator ? (
           <div key={i} className="menu-sep" role="separator" />
         ) : e.heading ? (
-          <div key={i} className="menu-label">{e.label}</div>
+          <div key={i} className="menu-label">{e.label ? tr(e.label) : ""}</div>
         ) : e.custom ? (
           <div key={i} className="px-2 py-1">{e.custom}</div>
         ) : (
@@ -83,7 +85,7 @@ export function Menu({ x, y, entries, onClose }: MenuProps) {
             }}
           >
             {e.icon}
-            {e.label}
+            {e.label ? tr(e.label) : ""}
           </button>
         ),
       )}

@@ -725,3 +725,15 @@ describe("large folders", () => {
     expect(searched).toBeLessThan(1500);
   });
 });
+
+import { PT_BR } from "./locales/pt-BR";
+
+describe("translations", () => {
+  const holes = (s: string) => [...s.matchAll(/\{(\w+)\}/g)].map((m) => m[1]).sort().join(",");
+  it("keep the same {placeholders} as the English text", () => {
+    for (const [k, v] of Object.entries(PT_BR)) expect(holes(v), k).toBe(holes(k));
+  });
+  it("have no empty translations", () => {
+    expect(Object.values(PT_BR).every((v) => v.trim().length > 0)).toBe(true);
+  });
+});

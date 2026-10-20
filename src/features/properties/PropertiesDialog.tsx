@@ -4,12 +4,14 @@ import { Dialog } from "@/components/Dialogs";
 import { propText } from "@/lib/frontmatter";
 import { useUi } from "@/stores/ui";
 import { useWorkspace } from "@/stores/workspace";
+import { useTr } from "@/lib/i18n";
 
 const MAX_COLS = 8;
 const MAX_ROWS = 500;
 
 /** Notes × frontmatter properties as a sortable, filterable table. */
 export function PropertiesDialog() {
+  const tr = useTr();
   const setDialog = useUi((s) => s.setDialog);
   const meta = useWorkspace((s) => s.index.meta);
   const [q, setQ] = useState("");
@@ -41,7 +43,7 @@ export function PropertiesDialog() {
   return (
     <Dialog title="Properties" onClose={() => setDialog(null)} width={860}>
       <div className="flex items-center gap-2 px-5 pb-2">
-        <input className="field" autoFocus placeholder="Filter by title or value…" aria-label="Filter properties" value={q} onChange={(e) => setQ(e.target.value)} />
+        <input className="field" autoFocus placeholder={tr("Filter by title or value…")} aria-label={tr("Filter properties")} value={q} onChange={(e) => setQ(e.target.value)} />
         <label className="flex items-center gap-2" style={{ whiteSpace: "nowrap" }}>
           <input type="checkbox" checked={all} onChange={(e) => setAll(e.target.checked)} /> Include notes without properties
         </label>

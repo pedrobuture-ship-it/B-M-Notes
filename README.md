@@ -24,6 +24,10 @@ No account, no cloud, no lock-in — everything is plain Markdown on your disk.
 - **Writing**: templates (`templates/` folder + built-ins), `![[embeds]]`, `[[note#Section]]` links, autocomplete after `[[` and `#`, unlinked mentions, a global Tasks view.
 - **Finding things**: saved searches, filters (`tag:`, `path:`, `title:`, any frontmatter property like `status:done`), back/forward (`Alt+←/→`), pinned and recent notes, a Properties table.
 - **Quality & safety**: rename also fixes `[text](note.md)` links, local ZIP backups (optional daily), a notes-health check (broken links, orphans), rebindable shortcuts, password-encrypted notes (AES-GCM).
+- **More on the mural**: magnetic alignment guides, align/distribute buttons, task progress on cards (`☑ 3/5`), a **Timeline** view, a **mind map** of a note's headings, export a mural as a standalone **HTML page**, and full keyboard navigation (arrows, Enter, Shift+arrows).
+- **More in notes**: `mermaid` diagrams, `$LaTeX$` maths, a grid **table editor** (Ctrl+Alt+T), PDF and audio attachments, **audio recording**, `@2026-11-01` dates with a **Calendar** and due reminders.
+- **Working together** (with the optional sync): "who is on this note", a warning when the remote changed the note you opened, and files you can keep private on your computer.
+- **Focus mode** (Ctrl+Shift+F), **Portuguese (Brasil)** and English, rebindable shortcuts, optional **update check**, and simple sandboxed **plugins**.
 - **Light and dark** themes, plus optional **GitHub sync** for sharing a folder.
 - Paste or drop images: they are copied to `assets/` and referenced as normal Markdown.
 
@@ -80,6 +84,14 @@ How conflicts are handled:
 - `.mural/settings.json`, backups and `sync.json` are never uploaded (added to `.gitignore`).
 
 Requirements: `git` installed. Unlinking (Settings → Sync) stops syncing and deletes nothing. Large files (> 10 MB) trigger a warning because they make the repository heavy.
+
+## Releases
+
+Push a tag such as `v0.2.0` and the **Release** workflow (`.github/workflows/release.yml`) builds `.AppImage`, `.deb`, `.rpm`, `.msi`/`.exe` and `.dmg` and attaches them to a draft GitHub release. `CI` runs type-check, lint and all tests on every push. The builds are not code-signed yet, so Windows and macOS ask for confirmation on first launch. In **Settings → Updates** you can check for a newer version (nothing is sent unless you click or opt in).
+
+## Plugins
+
+A plugin is a `.js` file in `.mural/plugins/` (never synced). It runs in an isolated Web Worker: no network, no DOM, no access to your files except the small `bm` API (`bm.command`, `bm.notes.list/read/write/create`, `bm.toast`, `bm.openNote`, `bm.prompt`). Every file must be approved in **Settings → Plugins** after you read its code, and editing it asks again. A command that runs longer than 10 s is stopped.
 
 ## Install / run from source
 

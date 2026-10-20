@@ -13,6 +13,7 @@ import { renameNoteFromTitle } from "@/lib/actions";
 import { isEncrypted } from "@/lib/crypto";
 import { extractTasks } from "@/lib/tasks";
 import type { CardColor } from "@/types";
+import { useTr } from "@/lib/i18n";
 
 export interface NoteNodeData extends Record<string, unknown> {
   path: string;
@@ -22,6 +23,7 @@ export interface NoteNodeData extends Record<string, unknown> {
 }
 
 export const NoteNode = memo(function NoteNode({ data, selected, dragging }: NodeProps) {
+  const tr = useTr();
   const { path, color, dim, onMenu } = data as NoteNodeData;
   const note = useWorkspace((s) => s.notes[path]);
   const tags = useWorkspace((s) => s.index.meta.get(path)?.tags);
@@ -116,7 +118,7 @@ export const NoteNode = memo(function NoteNode({ data, selected, dragging }: Nod
               className="nodrag"
               autoFocus
               defaultValue={stripExt(fileName)}
-              aria-label="Note name"
+              aria-label={tr("Note name")}
               onFocus={(e) => e.currentTarget.select()}
               onBlur={(e) => commitTitle(e.currentTarget.value)}
               onKeyDown={(e) => {
@@ -130,7 +132,7 @@ export const NoteNode = memo(function NoteNode({ data, selected, dragging }: Nod
             fileName
           )}
         </div>
-        <button className="nodrag" aria-label="Card menu" onClick={(e) => { const r = e.currentTarget.getBoundingClientRect(); onMenu(path, r.left, r.bottom + 4); }}>
+        <button className="nodrag" aria-label={tr("Card menu")} onClick={(e) => { const r = e.currentTarget.getBoundingClientRect(); onMenu(path, r.left, r.bottom + 4); }}>
           <MoreHorizontal size={16} />
         </button>
       </div>
@@ -150,11 +152,11 @@ export const NoteNode = memo(function NoteNode({ data, selected, dragging }: Nod
         ) : note.content.trim() ? (
           <Preview path={path} content={note.content} />
         ) : (
-          <p className="m-0 italic" style={{ opacity: 0.55 }} onDoubleClick={() => setEditing(path)}>Empty note — double-click to write.</p>
+          <p className="m-0 italic" style={{ opacity: 0.55 }} onDoubleClick={() => setEditing(path)}>{tr("Empty note — double-click to write.")}</p>
         )}
       </div>
       <div className="note-foot">
-        {taskStat.total > 0 && <span className="chip" data-tip="Tasks done" aria-label={`${taskStat.done} of ${taskStat.total} tasks done`}>☑ {taskStat.done}/{taskStat.total}</span>}
+        {taskStat.total > 0 && <span className="chip" data-tip={tr("Tasks done")} aria-label={`${taskStat.done} of ${taskStat.total} tasks done`}>☑ {taskStat.done}/{taskStat.total}</span>}
         {(tags ?? []).slice(0, 4).map((t) => <span key={t} className="chip">#{t}</span>)}
         {tags && tags.length > 4 && <span className="chip">+{tags.length - 4}</span>}
         {selected && !editing && (

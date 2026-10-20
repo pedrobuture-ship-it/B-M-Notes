@@ -4,11 +4,13 @@ import { useSync } from "@/stores/sync";
 import { useBoard, MAIN_BOARD } from "@/stores/board";
 import { useUi } from "@/stores/ui";
 import { useWorkspace } from "@/stores/workspace";
+import { useTr } from "@/lib/i18n";
 
 const notePaths = () => Object.keys(useWorkspace.getState().notes);
 
 /** Tabs for the murals of this folder: "Main" shows every note, the others hold the notes added to them. */
 export function BoardTabs() {
+  const tr = useTr();
   const boards = useBoard((s) => s.boards);
   const activeId = useBoard((s) => s.activeId);
   const linked = useSync((s) => s.info?.linked ?? false);
@@ -35,7 +37,7 @@ export function BoardTabs() {
   };
 
   return (
-    <div className="board-tabs" role="tablist" aria-label="Murals">
+    <div className="board-tabs" role="tablist" aria-label={tr("Murals")}>
       {boards.map((b) => (
         <div key={b.id} className="board-tab" role="tab" aria-selected={b.id === activeId} data-active={b.id === activeId}>
           <button className="board-tab-name" onClick={() => void switchBoard(b.id, notePaths())} onDoubleClick={() => void rename(b.id, b.name)} title={b.id === MAIN_BOARD ? "Shows every note" : "Double-click to rename"}>
@@ -49,7 +51,7 @@ export function BoardTabs() {
           )}
         </div>
       ))}
-      <button className="board-tab-add" onClick={() => void create()} aria-label="New mural" data-tip="New mural"><Plus size={14} /></button>
+      <button className="board-tab-add" onClick={() => void create()} aria-label={tr("New mural")} data-tip={tr("New mural")}><Plus size={14} /></button>
     </div>
   );
 }

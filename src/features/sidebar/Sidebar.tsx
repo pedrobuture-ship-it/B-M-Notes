@@ -12,6 +12,7 @@ import { basename, dirname, stripExt } from "@/lib/paths";
 import { copyPath, deleteEntry, deleteSavedSearch, isPinned, isPrivate, lockNote, newFolder, togglePrivate, newNote, renameEntry, revealInFolder, togglePin } from "@/lib/actions";
 import { ipc } from "@/lib/ipc";
 import type { TreeNode } from "@/types";
+import { useTr } from "@/lib/i18n";
 
 const TABS: { id: SidebarTab; label: string; icon: typeof FileText }[] = [
   { id: "notes", label: "Notes", icon: StickyNote },
@@ -21,19 +22,20 @@ const TABS: { id: SidebarTab; label: string; icon: typeof FileText }[] = [
 ];
 
 export function Sidebar() {
+  const tr = useTr();
   const tab = useUi((s) => s.sidebarTab);
   const setTab = useUi((s) => s.setSidebarTab);
   const name = useWorkspace((s) => s.info?.name);
   const count = useWorkspace((s) => s.index.meta.size);
   const root = useWorkspace((s) => s.info?.root);
   return (
-    <aside className="sidebar" aria-label="Sidebar">
+    <aside className="sidebar" aria-label={tr("Sidebar")}>
       <div className="ws-name" title={root}>{name}</div>
-      <div className="sidebar-tabs" role="tablist" aria-label="Sidebar sections">
+      <div className="sidebar-tabs" role="tablist" aria-label={tr("Sidebar sections")}>
         {TABS.map(({ id, label, icon: Icon }) => (
           <button key={id} role="tab" aria-selected={tab === id} className="tab" onClick={() => setTab(id)}>
             <Icon size={17} />
-            {label}
+            {tr(label)}
           </button>
         ))}
       </div>
@@ -44,10 +46,10 @@ export function Sidebar() {
         {tab === "explore" && <ExplorePanel />}
       </div>
       <div className="sidebar-foot">
-        <span>{count} {count === 1 ? "note" : "notes"}</span>
+        <span>{tr(count === 1 ? "{count} note" : "{count} notes", { count })}</span>
         <span className="flex-1" />
-        <button className="btn btn-ghost btn-icon" onClick={() => useUi.getState().setDialog("trash")} data-tip="Trash" aria-label="Trash"><Trash2 size={15} /></button>
-        <button className="btn btn-ghost btn-icon" onClick={() => void ipc.reveal("").catch(() => {})} data-tip="Reveal workspace in filesystem" aria-label="Reveal workspace in filesystem"><FolderOpen size={15} /></button>
+        <button className="btn btn-ghost btn-icon" onClick={() => useUi.getState().setDialog("trash")} data-tip={tr("Trash")} aria-label={tr("Trash")}><Trash2 size={15} /></button>
+        <button className="btn btn-ghost btn-icon" onClick={() => void ipc.reveal("").catch(() => {})} data-tip={tr("Reveal workspace in filesystem")} aria-label={tr("Reveal workspace in filesystem")}><FolderOpen size={15} /></button>
       </div>
     </aside>
   );
@@ -58,6 +60,7 @@ export function Sidebar() {
 const ROW_H = 28;
 
 function NotesPanel() {
+  const tr = useTr();
   const meta = useWorkspace((s) => s.index.meta);
   const tags = useWorkspace((s) => s.index.tags);
   const filter = useUi((s) => s.tagFilter);
@@ -74,14 +77,14 @@ function NotesPanel() {
       {filter && (
         <div className="px-2 pb-2 flex items-center gap-2">
           <span className="chip" data-active="true">#{filter}</span>
-          <button className="btn btn-ghost btn-icon" onClick={() => setFilter(null)} aria-label="Clear tag filter"><X size={14} /></button>
+          <button className="btn btn-ghost btn-icon" onClick={() => setFilter(null)} aria-label={tr("Clear tag filter")}><X size={14} /></button>
         </div>
       )}
       {items.length === 0 ? (
         <div className="empty">
           <EmptyFiles />
           <p className="hand">{filter ? "No notes with this tag." : "No Markdown files yet."}</p>
-          {!filter && <button className="btn" onClick={() => void newNote("")}><FilePlus size={15} /> New note</button>}
+          {!filter && <button className="btn" onClick={() => void newNote("")}><FilePlus size={15} /> {tr("New note")}</button>}
         </div>
       ) : (
         <VirtualList
@@ -107,6 +110,7 @@ function privateEntry(path: string): MenuEntry[] {
 
 /** Saved searches, pinned notes and recently opened notes, above the full list. */
 function NavSections() {
+  const tr = useTr();
   const saved = useSettings((s) => s.settings.search.saved);
   const pinned = useSettings((s) => s.settings.nav.pinned);
   const recent = useUi((s) => s.recent);
@@ -124,7 +128,7 @@ function NavSections() {
   );
   return (
     <div className="nav-sections">
-      {saved.length > 0 && <div className="nav-heading">Saved searches</div>}
+      {saved.length > 0 && <div className="nav-heading">{tr("Saved searches")}</div>}
       {saved.map((s) => (
         <div key={s.id} className="flex items-center">
           <button className="tree-row flex-1" onClick={() => useUi.getState().openSearch(s.query)} data-tip={s.query}>
@@ -134,9 +138,9 @@ function NavSections() {
           <button className="btn btn-ghost btn-icon" onClick={() => deleteSavedSearch(s.id)} aria-label={`Remove saved search ${s.name}`}><X size={12} /></button>
         </div>
       ))}
-      {pinnedList.length > 0 && <div className="nav-heading">Pinned</div>}
+      {pinnedList.length > 0 && <div className="nav-heading">{tr("Pinned")}</div>}
       {pinnedList.map((p) => row(p, <Pin size={14} />))}
-      {recentList.length > 0 && <div className="nav-heading">Recent</div>}
+      {recentList.length > 0 && <div className="nav-heading">{tr("Recent")}</div>}
       {recentList.map((p) => row(p, <History size={14} />))}
     </div>
   );
@@ -145,6 +149,7 @@ function NavSections() {
 // ---------- Tags ----------
 
 function TagsPanel() {
+  const tr = useTr();
   const tags = useWorkspace((s) => s.index.tags);
   const filter = useUi((s) => s.tagFilter);
   const setFilter = useUi((s) => s.setTagFilter);
@@ -154,7 +159,7 @@ function TagsPanel() {
     return (
       <div className="empty">
         <EmptyTags />
-        <p className="hand">No tags yet.</p>
+        <p className="hand">{tr("No tags yet.")}</p>
         <p>Write <span className="kbd">#idea</span> in any note.</p>
       </div>
     );
@@ -183,6 +188,7 @@ function TagsPanel() {
 // ---------- Explore ----------
 
 function ExplorePanel() {
+  const tr = useTr();
   const meta = useWorkspace((s) => s.index.meta);
   const backlinks = useWorkspace((s) => s.index.backlinks);
   const openNote = useUi((s) => s.openNote);
@@ -192,10 +198,10 @@ function ExplorePanel() {
   );
   return (
     <div>
-      <p className="px-3 mt-0" style={{ color: "var(--ink-dim)" }}>The graph shows every note and the [[wiki links]] between them.</p>
-      <div className="handwritten-label px-3 pt-2" style={{ fontSize: "1.3rem" }}>Most connected</div>
+      <p className="px-3 mt-0" style={{ color: "var(--ink-dim)" }}>{tr("The graph shows every note and the [[wiki links]] between them.")}</p>
+      <div className="handwritten-label px-3 pt-2" style={{ fontSize: "1.3rem" }}>{tr("Most connected")}</div>
       {top.length === 0 ? (
-        <p className="px-3" style={{ color: "var(--ink-faint)" }}>Link notes with [[double brackets]] to see them here.</p>
+        <p className="px-3" style={{ color: "var(--ink-faint)" }}>{tr("Link notes with [[double brackets]] to see them here.")}</p>
       ) : (
         top.map(({ m, degree }) => (
           <button key={m.path} className="tree-row" onClick={() => openNote(m.path)}>
@@ -225,6 +231,7 @@ function flatten(nodes: TreeNode[], expanded: Set<string>, depth = 0, out: Row[]
 }
 
 function FilesPanel() {
+  const tr = useTr();
   const tree = useWorkspace((s) => s.tree);
   const move = useWorkspace((s) => s.moveEntry);
   const { menu, open, close } = useContextMenu();
@@ -265,13 +272,13 @@ function FilesPanel() {
       style={dropRoot ? { outline: "2px dashed var(--amber)", outlineOffset: -4, borderRadius: 8 } : undefined}
     >
       <div className="flex gap-1 px-1 pb-2">
-        <button className="btn btn-icon" onClick={() => void newNote("")} data-tip="New note" aria-label="New note"><FilePlus size={15} /></button>
-        <button className="btn btn-icon" onClick={() => void newFolder("")} data-tip="New folder" aria-label="New folder"><FolderPlus size={15} /></button>
+        <button className="btn btn-icon" onClick={() => void newNote("")} data-tip={tr("New note")} aria-label={tr("New note")}><FilePlus size={15} /></button>
+        <button className="btn btn-icon" onClick={() => void newFolder("")} data-tip={tr("New folder")} aria-label={tr("New folder")}><FolderPlus size={15} /></button>
       </div>
       {rows.length === 0 ? (
         <div className="empty">
           <EmptyFiles />
-          <p className="hand">No Markdown files yet.</p>
+          <p className="hand">{tr("No Markdown files yet.")}</p>
           <p>Create a note or drop <span className="kbd">.md</span> files into the folder.</p>
         </div>
       ) : (

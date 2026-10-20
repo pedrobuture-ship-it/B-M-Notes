@@ -7,9 +7,11 @@ import { fuzzyScore } from "@/lib/search";
 import { newNote } from "@/lib/actions";
 import { useUi } from "@/stores/ui";
 import { useWorkspace } from "@/stores/workspace";
+import { useTr } from "@/lib/i18n";
 
 /** Picks a template (built-in or from the workspace's `templates/` folder) and creates a note from it. */
 export function TemplateDialog() {
+  const tr = useTr();
   const setDialog = useUi((s) => s.setDialog);
   const [q, setQ] = useState("");
   const [sel, setSel] = useState(0);
@@ -36,8 +38,8 @@ export function TemplateDialog() {
         <input
           className="field"
           autoFocus
-          placeholder="Filter templates…"
-          aria-label="Filter templates"
+          placeholder={tr("Filter templates…")}
+          aria-label={tr("Filter templates")}
           value={q}
           onChange={(e) => { setQ(e.target.value); setSel(0); }}
           onKeyDown={(e) => {
@@ -55,7 +57,7 @@ export function TemplateDialog() {
             <span className="text-xs" style={{ color: "var(--ink-faint)" }}>{t.path ? t.path : "built-in"}</span>
           </button>
         ))}
-        {items.length === 0 && <p className="px-3 py-6 m-0 text-center" style={{ color: "var(--ink-faint)" }}>No template matches.</p>}
+        {items.length === 0 && <p className="px-3 py-6 m-0 text-center" style={{ color: "var(--ink-faint)" }}>{tr("No template matches.")}</p>}
       </div>
       <p className="px-5 py-3 m-0" style={{ color: "var(--ink-faint)", fontSize: "0.85rem" }}>
         Add your own by creating notes in a <b>templates/</b> folder. Variables: <code>{"{{title}}"}</code> <code>{"{{date}}"}</code> <code>{"{{time}}"}</code>.

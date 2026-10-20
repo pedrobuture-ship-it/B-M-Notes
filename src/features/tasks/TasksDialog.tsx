@@ -5,12 +5,14 @@ import { extractTasks } from "@/lib/tasks";
 import { TEMPLATE_DIR } from "@/lib/templates";
 import { useUi } from "@/stores/ui";
 import { useWorkspace } from "@/stores/workspace";
+import { useTr } from "@/lib/i18n";
 
 type Filter = "open" | "done" | "all";
 const LIMIT = 300;
 
 /** Every checkbox of every note in one place. Ticking one edits the real note. */
 export function TasksDialog() {
+  const tr = useTr();
   const setDialog = useUi((s) => s.setDialog);
   const notes = useWorkspace((s) => s.notes);
   const meta = useWorkspace((s) => s.index.meta);
@@ -44,8 +46,8 @@ export function TasksDialog() {
   return (
     <Dialog title="Tasks" onClose={() => setDialog(null)} width={640}>
       <div className="flex items-center gap-2 px-5 pb-2">
-        <input className="field" autoFocus placeholder="Filter tasks…" aria-label="Filter tasks" value={q} onChange={(e) => setQ(e.target.value)} />
-        <div className="segmented" role="group" aria-label="Status">
+        <input className="field" autoFocus placeholder={tr("Filter tasks…")} aria-label={tr("Filter tasks")} value={q} onChange={(e) => setQ(e.target.value)} />
+        <div className="segmented" role="group" aria-label={tr("Status")}>
           {(["open", "done", "all"] as const).map((f) => (
             <button key={f} aria-pressed={filter === f} onClick={() => setFilter(f)}>{f}</button>
           ))}

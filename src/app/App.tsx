@@ -47,20 +47,20 @@ function MainArea() {
   return (
     <div className="main">
       <div className="main-tabs" role="tablist">
-        <button role="tab" className="main-tab" aria-selected={view === "board"} onClick={() => setView("board")}><LayoutDashboard size={15} /><span className="label">Mural</span></button>
-        <button role="tab" className="main-tab" aria-selected={view === "graph"} onClick={() => setView("graph")}><Network size={15} /><span className="label">Explore</span></button>
+        <button role="tab" className="main-tab" aria-selected={view === "board"} onClick={() => setView("board")}><LayoutDashboard size={15} /><span className="label">{tr("Mural")}</span></button>
+        <button role="tab" className="main-tab" aria-selected={view === "graph"} onClick={() => setView("graph")}><Network size={15} /><span className="label">{tr("Explore")}</span></button>
         <button role="tab" className="main-tab" aria-selected={view === "timeline"} onClick={() => setView("timeline")}><Clock3 size={15} /><span className="label">{tr("Timeline")}</span></button>
         {active && (
           <div role="tab" className="main-tab" aria-selected={view === "note"} tabIndex={0} onClick={() => useUi.getState().openNote(active)} onKeyDown={(e) => e.key === "Enter" && useUi.getState().openNote(active)}>
             <span className="label">{basename(active)}</span>
-            <button aria-label="Close note" onClick={(e) => { e.stopPropagation(); closeNote(); }} className="btn-ghost" style={{ lineHeight: 0 }}><X size={14} /></button>
+            <button aria-label={tr("Close note")} onClick={(e) => { e.stopPropagation(); closeNote(); }} className="btn-ghost" style={{ lineHeight: 0 }}><X size={14} /></button>
           </div>
         )}
         <div className="flex-1" />
         <div className="pb-1.5 pr-1"><SaveIndicator /></div>
       </div>
       <div className="main-content">
-        {view === "board" && (boardReady ? <Board key={activeBoard} /> : <div className="empty h-full"><p className="hand">Laying out the wall…</p></div>)}
+        {view === "board" && (boardReady ? <Board key={activeBoard} /> : <div className="empty h-full"><p className="hand">{tr("Laying out the wall…")}</p></div>)}
         {view === "graph" && <GraphExplorer />}
         {view === "timeline" && <Timeline />}
         {view === "note" && active && <NotePane path={active} />}
@@ -70,6 +70,7 @@ function MainArea() {
 }
 
 export function App() {
+  const tr = useTr();
   const zen = useUi((s) => s.zen);
   const info = useWorkspace((s) => s.info);
   const loading = useWorkspace((s) => s.loading);
@@ -124,7 +125,7 @@ export function App() {
             <MainArea />
           </div>
         ) : loading ? (
-          <div className="empty h-full"><p className="hand">Opening your notes…</p></div>
+          <div className="empty h-full"><p className="hand">{tr("Opening your notes…")}</p></div>
         ) : (
           <Onboarding />
         )}

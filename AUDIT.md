@@ -87,3 +87,20 @@ images, live watcher updates verified by editing files from outside). Release bu
   (no title, tags or links in the graph). Unlocking writes plain text to disk until "Lock again". Lost passwords are unrecoverable.
 - **Extra murals** have no automatic file snapshots (only the main `board.json` does); with GitHub sync, Git is the history.
 - **Backups** are plain ZIPs (not encrypted); the trash, `.git` and `node_modules` are skipped.
+
+## 7. Round 3 additions: what is verified and what is not
+
+Verified by automated tests: alignment/snap maths, timeline grouping, mind-map layout, HTML export builder, `$` maths guard and KaTeX rendering,
+`@date` parsing and calendar grid, table parser/serialiser, attachment markdown, byte-range parsing, update version comparison, the plugin host protocol
+(with a fake worker), presence/remote-change/private-files over a real local git remote, parallel loading of 1500 notes, 5000-note index/search timing,
+translation placeholders, keyboard-navigation geometry.
+
+**Not exercised in a real window** (written carefully, but please try them): microphone recording (WebKitGTK may ask for or refuse microphone access),
+mermaid diagrams in the preview, the HTML export file dialog, PDF "open with the system app", audio seeking through the `mural://` range responses,
+the release workflow (needs a pushed tag), and the real-time behaviour of presence between two machines.
+
+Known limits: the plugin sandbox relies on a Web Worker plus the app's CSP (no network); it is not a security boundary against a determined attacker,
+which is why every plugin needs explicit approval of its exact code. Translations cover the main interface (menus, dialogs, settings, toasts) in
+English and Portuguese (Brasil); text built with variable names inside sentences may still appear in English. Presence publishes one force-pushed
+branch `bm-presence-<login>` per person. Making an already-shared file private removes it from the repository, so the other person's copy is deleted
+on their next sync. Large folders still load every note into memory; an on-disk index was not needed for the measured sizes.

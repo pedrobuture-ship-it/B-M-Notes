@@ -1,8 +1,10 @@
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { X } from "lucide-react";
 import { useUi } from "@/stores/ui";
+import { useTr } from "@/lib/i18n";
 
 export function Dialog({ title, onClose, children, width, center = false }: { title?: string; onClose: () => void; children: ReactNode; width?: number; center?: boolean }) {
+  const tr = useTr();
   const ref = useRef<HTMLDivElement>(null);
   useEffect(() => {
     const prev = document.activeElement as HTMLElement | null;
@@ -33,11 +35,11 @@ export function Dialog({ title, onClose, children, width, center = false }: { ti
   }, [onClose]);
   return (
     <div className="dialog-backdrop" data-center={center ? "true" : undefined} onMouseDown={(e) => e.target === e.currentTarget && onClose()}>
-      <div ref={ref} className="dialog" role="dialog" aria-modal="true" aria-label={title} style={width ? { width } : undefined}>
+      <div ref={ref} className="dialog" role="dialog" aria-modal="true" aria-label={title ? tr(title) : undefined} style={width ? { width } : undefined}>
         {title && (
           <div className="flex items-center justify-between px-5 pt-4 pb-2">
-            <div className="dialog-title">{title}</div>
-            <button className="btn btn-ghost btn-icon" onClick={onClose} aria-label="Close"><X size={16} /></button>
+            <div className="dialog-title">{tr(title)}</div>
+            <button className="btn btn-ghost btn-icon" onClick={onClose} aria-label={tr("Close")}><X size={16} /></button>
           </div>
         )}
         {children}
@@ -49,6 +51,7 @@ export function Dialog({ title, onClose, children, width, center = false }: { ti
 export function ConfirmDialog() {
   const req = useUi((s) => s.confirmReq);
   const resolve = useUi((s) => s.resolveConfirm);
+  const tr = useTr();
   const okRef = useRef<HTMLButtonElement>(null);
   useEffect(() => {
     if (req) okRef.current?.focus();
@@ -56,11 +59,11 @@ export function ConfirmDialog() {
   if (!req) return null;
   return (
     <Dialog title={req.title} onClose={() => resolve(false)} width={440} center>
-      <div className="px-5 pb-2 selectable" style={{ color: "var(--ink-dim)" }}>{req.message}</div>
+      <div className="px-5 pb-2 selectable" style={{ color: "var(--ink-dim)" }}>{tr(req.message)}</div>
       <div className="flex justify-end gap-2 px-5 py-4">
-        <button className="btn" onClick={() => resolve(false)}>Cancel</button>
+        <button className="btn" onClick={() => resolve(false)}>{tr("Cancel")}</button>
         <button ref={okRef} className={`btn ${req.danger ? "btn-danger" : "btn-primary"}`} onClick={() => resolve(true)}>
-          {req.confirmLabel ?? "OK"}
+          {tr(req.confirmLabel ?? "OK")}
         </button>
       </div>
     </Dialog>
@@ -70,6 +73,7 @@ export function ConfirmDialog() {
 export function ChoiceDialog() {
   const req = useUi((s) => s.choiceReq);
   const resolve = useUi((s) => s.resolveChoice);
+  const tr = useTr();
   const firstRef = useRef<HTMLButtonElement>(null);
   useEffect(() => {
     if (req) firstRef.current?.focus();
@@ -77,16 +81,16 @@ export function ChoiceDialog() {
   if (!req) return null;
   return (
     <Dialog title={req.title} onClose={() => resolve(null)} width={480} center>
-      <div className="px-5 pb-2 selectable" style={{ color: "var(--ink-dim)", whiteSpace: "pre-line" }}>{req.message}</div>
+      <div className="px-5 pb-2 selectable" style={{ color: "var(--ink-dim)", whiteSpace: "pre-line" }}>{tr(req.message)}</div>
       {req.details && (
         <ul className="px-5 pb-2 overflow-auto selectable" style={{ maxHeight: 180, listStyle: "none", margin: 0 }}>
           {req.details.map((d) => <li key={d} style={{ padding: "1px 0" }}>{d}</li>)}
         </ul>
       )}
       <div className="flex justify-end gap-2 px-5 py-4 flex-wrap">
-        <button className="btn" onClick={() => resolve(null)}>Cancel</button>
+        <button className="btn" onClick={() => resolve(null)}>{tr("Cancel")}</button>
         {req.options.map((o, i) => (
-          <button key={o.value} ref={i === 0 ? firstRef : undefined} className={`btn ${o.kind === "primary" ? "btn-primary" : o.kind === "danger" ? "btn-danger" : ""}`} onClick={() => resolve(o.value)}>{o.label}</button>
+          <button key={o.value} ref={i === 0 ? firstRef : undefined} className={`btn ${o.kind === "primary" ? "btn-primary" : o.kind === "danger" ? "btn-danger" : ""}`} onClick={() => resolve(o.value)}>{tr(o.label)}</button>
         ))}
       </div>
     </Dialog>
@@ -96,6 +100,7 @@ export function ChoiceDialog() {
 export function PromptDialog() {
   const req = useUi((s) => s.promptReq);
   const resolve = useUi((s) => s.resolvePrompt);
+  const tr = useTr();
   const [value, setValue] = useState("");
   const inputRef = useRef<HTMLInputElement>(null);
   useEffect(() => {
@@ -114,12 +119,12 @@ export function PromptDialog() {
         }}
       >
         <div className="px-5 pb-2">
-          {req.label && <label className="block mb-1" style={{ color: "var(--ink-dim)" }}>{req.label}</label>}
+          {req.label && <label className="block mb-1" style={{ color: "var(--ink-dim)" }}>{tr(req.label)}</label>}
           <input ref={inputRef} className="field" type={req.secret ? "password" : "text"} autoComplete="off" value={value} onChange={(e) => setValue(e.target.value)} autoFocus spellCheck={false} />
         </div>
         <div className="flex justify-end gap-2 px-5 py-4">
-          <button type="button" className="btn" onClick={() => resolve(null)}>Cancel</button>
-          <button type="submit" className="btn btn-primary" disabled={!value.trim()}>{req.confirmLabel ?? "OK"}</button>
+          <button type="button" className="btn" onClick={() => resolve(null)}>{tr("Cancel")}</button>
+          <button type="submit" className="btn btn-primary" disabled={!value.trim()}>{tr(req.confirmLabel ?? "OK")}</button>
         </div>
       </form>
     </Dialog>
@@ -129,11 +134,12 @@ export function PromptDialog() {
 export function Toasts() {
   const toasts = useUi((s) => s.toasts);
   const dismiss = useUi((s) => s.dismissToast);
+  const tr = useTr();
   return (
     <div className="toasts" role="status" aria-live="polite">
       {toasts.map((t) => (
         <div key={t.id} className="toast" data-kind={t.kind} onClick={() => dismiss(t.id)}>
-          {t.message}
+          {tr(t.message)}
         </div>
       ))}
     </div>

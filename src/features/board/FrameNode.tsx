@@ -2,6 +2,7 @@ import { memo, useState } from "react";
 import { NodeResizer, type NodeProps } from "@xyflow/react";
 import { useBoard } from "@/stores/board";
 import type { CardColor } from "@/types";
+import { useTr } from "@/lib/i18n";
 
 export interface FrameNodeData extends Record<string, unknown> {
   id: string;
@@ -11,6 +12,7 @@ export interface FrameNodeData extends Record<string, unknown> {
 }
 
 export const FrameNode = memo(function FrameNode({ data, selected }: NodeProps) {
+  const tr = useTr();
   const { id, title, color, onMenu } = data as FrameNodeData;
   const patchFrame = useBoard((s) => s.patchFrame);
   const [editing, setEditing] = useState(false);
@@ -36,7 +38,7 @@ export const FrameNode = memo(function FrameNode({ data, selected }: NodeProps) 
               autoFocus
               defaultValue={title}
               maxLength={40}
-              aria-label="Frame title"
+              aria-label={tr("Frame title")}
               onFocus={(e) => e.currentTarget.select()}
               onBlur={(e) => {
                 setEditing(false);

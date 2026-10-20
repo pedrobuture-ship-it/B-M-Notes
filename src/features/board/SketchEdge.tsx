@@ -4,6 +4,7 @@ import { Trash2 } from "lucide-react";
 import { hashUnit } from "@/lib/board";
 import { useBoard } from "@/stores/board";
 import { removeEdge } from "@/lib/actions";
+import { useTr } from "@/lib/i18n";
 
 export const PRESET_LABELS = ["Related", "Depends on", "Inspires", "Reference", "Blocks"];
 
@@ -15,14 +16,15 @@ function rectOf(n: InternalNode) {
 }
 
 /** Leaves from the side dot facing the other card and lands on the opposite side dot. */
-function anchors(sr: ReturnType<typeof rectOf>, tr: ReturnType<typeof rectOf>) {
-  const dir = tr.c.x >= sr.c.x ? 1 : -1;
+function anchors(sr: ReturnType<typeof rectOf>, trg: ReturnType<typeof rectOf>) {
+  const dir = trg.c.x >= sr.c.x ? 1 : -1;
   const s = { x: dir > 0 ? sr.x + sr.w + 9 : sr.x - 9, y: sr.c.y };
-  const t = { x: dir > 0 ? tr.x - 11 : tr.x + tr.w + 11, y: tr.c.y };
+  const t = { x: dir > 0 ? trg.x - 11 : trg.x + trg.w + 11, y: trg.c.y };
   return { s, t, dir };
 }
 
 export const SketchEdge = memo(function SketchEdge({ id, source, target, selected, data }: EdgeProps) {
+  const tr = useTr();
   const sn = useInternalNode(source);
   const tn = useInternalNode(target);
   const [draft, setDraft] = useState("");
@@ -32,8 +34,8 @@ export const SketchEdge = memo(function SketchEdge({ id, source, target, selecte
   const manual = Boolean((data as { manual?: boolean } | undefined)?.manual);
   const label = (data as { label?: string } | undefined)?.label ?? "";
   const sr = rectOf(sn);
-  const tr = rectOf(tn);
-  const { s, t, dir } = anchors(sr, tr);
+  const trg = rectOf(tn);
+  const { s, t, dir } = anchors(sr, trg);
   const len = Math.hypot(t.x - s.x, t.y - s.y);
   const reach = Math.max(40, Math.abs(t.x - s.x) * 0.45);
   const sag = hashUnit(id) * 10;
@@ -70,9 +72,9 @@ export const SketchEdge = memo(function SketchEdge({ id, source, target, selecte
               }}
             >
               <input className="field" style={{ padding: "2px 8px" }} placeholder={label ? `Label: ${label}` : "Custom label…"} value={draft} maxLength={40} onChange={(e) => setDraft(e.target.value)} />
-              {label && <button type="button" className="btn btn-icon" onClick={() => setLabel(id, "")} aria-label="Clear label">✕</button>}
+              {label && <button type="button" className="btn btn-icon" onClick={() => setLabel(id, "")} aria-label={tr("Clear label")}>✕</button>}
             </form>
-            <button className="btn btn-danger btn-icon w-full justify-center" onClick={() => removeEdge(id, source, target)}><Trash2 size={14} /> Remove link</button>
+            <button className="btn btn-danger btn-icon w-full justify-center" onClick={() => removeEdge(id, source, target)}><Trash2 size={14} /> {tr("Remove link")}</button>
           </div>
         )}
       </EdgeLabelRenderer>

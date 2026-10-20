@@ -7,6 +7,7 @@ import { useUi } from "@/stores/ui";
 import { searchNotes, type SearchResult } from "@/lib/search";
 import { saveSearch } from "@/lib/actions";
 import { useSettings } from "@/stores/settings";
+import { useTr } from "@/lib/i18n";
 
 function Marked({ text, marks }: { text: string; marks: [number, number][] }) {
   const parts: React.ReactNode[] = [];
@@ -21,6 +22,7 @@ function Marked({ text, marks }: { text: string; marks: [number, number][] }) {
 }
 
 export function SearchDialog() {
+  const tr = useTr();
   const setDialog = useUi((s) => s.setDialog);
   const openNote = useUi((s) => s.openNote);
   const [input, setInput] = useState(() => useUi.getState().searchPrefill ?? "");
@@ -58,10 +60,10 @@ export function SearchDialog() {
         <input
           className="field"
           autoFocus
-          placeholder="Search name, title, #tag, content — or tag:x path:y status:done"
+          placeholder={tr("Search name, title, #tag, content — or tag:x path:y status:done")}
           value={input}
           onChange={(e) => setInput(e.target.value)}
-          aria-label="Search notes"
+          aria-label={tr("Search notes")}
           role="combobox"
           aria-expanded="true"
           aria-controls="search-results"
@@ -74,7 +76,7 @@ export function SearchDialog() {
       </div>
       {input.trim() && (
         <div className="px-4 pb-1 flex justify-end">
-          <button className="btn btn-ghost" onClick={() => void saveSearch(input)}><Bookmark size={14} /> Save this search</button>
+          <button className="btn btn-ghost" onClick={() => void saveSearch(input)}><Bookmark size={14} /> {tr("Save this search")}</button>
         </div>
       )}
       <div className="palette-list" id="search-results" role="listbox" ref={listRef} style={{ minHeight: 120 }}>
@@ -90,7 +92,7 @@ export function SearchDialog() {
             ))}
           </div>
         ) : results.length === 0 ? (
-          <div className="empty"><EmptySearch /><p className="hand">No notes found.</p></div>
+          <div className="empty"><EmptySearch /><p className="hand">{tr("No notes found.")}</p></div>
         ) : (
           results.map((r, i) => (
             <button key={r.path} role="option" aria-selected={i === sel} className="palette-item" onMouseMove={() => setSel(i)} onClick={() => go(r)}>

@@ -5,9 +5,11 @@ import { basename } from "@/lib/paths";
 import { useUi } from "@/stores/ui";
 import { useWorkspace } from "@/stores/workspace";
 import { linkNameFor } from "./wikiComplete";
+import { useTr } from "@/lib/i18n";
 
 /** Notes that mention this note's title or name in plain text but do not link to it. Computed on demand. */
 export function UnlinkedMentions({ path }: { path: string }) {
+  const tr = useTr();
   const [hits, setHits] = useState<string[] | null>(null);
 
   const names = () => {
@@ -37,19 +39,19 @@ export function UnlinkedMentions({ path }: { path: string }) {
   };
 
   return (
-    <div className="backlinks" aria-label="Unlinked mentions">
+    <div className="backlinks" aria-label={tr("Unlinked mentions")}>
       <div className="flex items-center gap-2">
-        <div className="handwritten-label" style={{ fontSize: "1.35rem" }}><TextSearch size={14} className="inline mr-1" />Unlinked mentions</div>
+        <div className="handwritten-label" style={{ fontSize: "1.35rem" }}><TextSearch size={14} className="inline mr-1" />{tr("Unlinked mentions")}</div>
         <button className="btn" onClick={find}>{hits === null ? "Find" : "Refresh"}</button>
       </div>
       {hits !== null && (hits.length === 0 ? (
-        <p className="m-0 mt-1" style={{ color: "var(--ink-faint)" }}>No other note mentions this one without linking to it.</p>
+        <p className="m-0 mt-1" style={{ color: "var(--ink-faint)" }}>{tr("No other note mentions this one without linking to it.")}</p>
       ) : (
         <ul className="m-0 mt-1 p-0 list-none">
           {hits.map((p) => (
             <li key={p} className="flex items-center gap-2" style={{ padding: "2px 0" }}>
               <button className="chip" onClick={() => useUi.getState().openNote(p)} data-tip={p}>{basename(p)}</button>
-              <button className="btn" onClick={() => link(p)}>Link</button>
+              <button className="btn" onClick={() => link(p)}>{tr("Link")}</button>
             </li>
           ))}
         </ul>

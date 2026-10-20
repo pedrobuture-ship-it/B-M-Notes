@@ -117,3 +117,10 @@ Regra do produto: **nenhuma função de IA/LLM** no app. Tudo abaixo é determin
 **P4. Idiomas** — Plano: dicionário `t()` com inglês e português do Brasil, seletor em Aparência, cobrindo a interface principal.
 **P5. Acessibilidade** — Plano: setas navegam entre cards, Enter abre, Shift+setas movem; rótulos ARIA e região "live" anunciando a seleção.
 **P6. Desempenho** — Plano: leitura paralela no Rust, limite para arquivos gigantes e teste de carga com milhares de notas; índice em disco só se as medidas pedirem.
+
+## Estado da rodada 3
+
+Implementado: C1 presença, C2 aviso de mudança remota, C3 arquivos privados, M1 linha do tempo, M2 mapa mental, M3 progresso de tarefas nos cards,
+M4 guias/alinhar/distribuir, M5 exportar HTML, K1 mermaid, K2 fórmulas, K3 editor de tabelas, K4 PDF/áudio, K5 gravação de áudio, K6 datas e calendário,
+P1 workflows de release/CI e verificação de atualização, P2 plugins em sandbox, P3 modo foco, P4 idiomas (EN/PT-BR), P5 navegação por teclado e leitor de tela,
+P6 leitura paralela e teste de carga. Detalhes e limites no `AUDIT.md` (seção 7).

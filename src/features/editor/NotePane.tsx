@@ -17,19 +17,21 @@ import { Preview } from "./Preview";
 import { Squiggle } from "@/components/doodles";
 
 export function SaveIndicator() {
+  const tr = useTr();
   const status = useWorkspace((s) => s.saveStatus);
   if (status === "idle") return <span className="save-pill" data-status="idle" aria-live="polite">&nbsp;</span>;
   return (
     <span className="save-pill" data-status={status} aria-live="polite">
-      {status === "saving" && <><Loader2 size={14} className="animate-spin" /> Saving...</>}
-      {status === "saved" && <><Check size={14} /> Saved</>}
-      {status === "error" && <><CircleAlert size={14} /> Save failed</>}
+      {status === "saving" && <><Loader2 size={14} className="animate-spin" /> {tr("Saving...")}</>}
+      {status === "saved" && <><Check size={14} /> {tr("Saved")}</>}
+      {status === "error" && <><CircleAlert size={14} /> {tr("Save failed")}</>}
     </span>
   );
 }
 
 /** Shown instead of the editor while a note is encrypted. */
 function LockedView({ path }: { path: string }) {
+  const tr = useTr();
   const [pw, setPw] = useState("");
   const [busy, setBusy] = useState(false);
   const submit = async () => {
@@ -42,12 +44,12 @@ function LockedView({ path }: { path: string }) {
   return (
     <div className="empty h-full">
       <Lock size={42} style={{ color: "var(--amber)" }} />
-      <p className="hand">This note is encrypted.</p>
+      <p className="hand">{tr("This note is encrypted.")}</p>
       <form className="flex gap-2" onSubmit={(e) => { e.preventDefault(); void submit(); }}>
-        <input className="field" type="password" autoFocus autoComplete="off" placeholder="Password" aria-label="Password" value={pw} onChange={(e) => setPw(e.target.value)} />
+        <input className="field" type="password" autoFocus autoComplete="off" placeholder={tr("Password")} aria-label={tr("Password")} value={pw} onChange={(e) => setPw(e.target.value)} />
         <button className="btn btn-primary" type="submit" disabled={busy || !pw}>{busy ? "Unlocking…" : "Unlock"}</button>
       </form>
-      <small style={{ color: "var(--ink-faint)", maxWidth: 360, textAlign: "center" }}>Unlocking turns the file back into plain text until you lock it again. Lost passwords cannot be recovered.</small>
+      <small style={{ color: "var(--ink-faint)", maxWidth: 360, textAlign: "center" }}>{tr("Unlocking turns the file back into plain text until you lock it again. Lost passwords cannot be recovered.")}</small>
     </div>
   );
 }
@@ -90,8 +92,8 @@ export function NotePane({ path }: { path: string }) {
   if (!note) {
     return (
       <div className="empty h-full">
-        <p className="hand">This note is gone.</p>
-        <button className="btn" onClick={() => setView("board")}>Back to the mural</button>
+        <p className="hand">{tr("This note is gone.")}</p>
+        <button className="btn" onClick={() => setView("board")}>{tr("Back to the mural")}</button>
       </div>
     );
   }
@@ -100,7 +102,7 @@ export function NotePane({ path }: { path: string }) {
     return (
       <div className="note-pane">
         <div className="note-toolbar">
-          <button className="btn btn-ghost btn-icon" onClick={() => setView("board")} aria-label="Back to mural" data-tip="Back to mural"><ArrowLeft size={16} /></button>
+          <button className="btn btn-ghost btn-icon" onClick={() => setView("board")} aria-label={tr("Back to mural")} data-tip={tr("Back to mural")}><ArrowLeft size={16} /></button>
           <span className="handwritten-label" style={{ fontSize: "1.6rem" }}>{basename(path)}</span>
         </div>
         <LockedView path={path} />
@@ -117,16 +119,16 @@ export function NotePane({ path }: { path: string }) {
   return (
     <div className="note-pane">
       <div className="note-toolbar">
-        <button className="btn btn-ghost btn-icon" onClick={() => setView("board")} aria-label="Back to mural" data-tip="Back to mural"><ArrowLeft size={16} /></button>
+        <button className="btn btn-ghost btn-icon" onClick={() => setView("board")} aria-label={tr("Back to mural")} data-tip={tr("Back to mural")}><ArrowLeft size={16} /></button>
         <span className="handwritten-label" style={{ fontSize: "1.6rem" }}>{basename(path)}</span>
         <div className="flex-1" />
         <SaveIndicator />
         {unlockedHere
-          ? <button className="btn" onClick={() => void relockNote(path)} data-tip="Encrypt again with the same password"><Lock size={15} /> Lock again</button>
-          : <button className="btn btn-ghost btn-icon" onClick={() => void lockNote(path)} aria-label="Encrypt note" data-tip="Encrypt with a password"><LockOpen size={16} /></button>}
-        <button className="btn btn-ghost btn-icon" onClick={() => useUi.getState().setDialog("mindmap")} aria-label="Mind map" data-tip="Mind map of the headings"><ListTree size={16} /></button>
+          ? <button className="btn" onClick={() => void relockNote(path)} data-tip={tr("Encrypt again with the same password")}><Lock size={15} /> {tr("Lock again")}</button>
+          : <button className="btn btn-ghost btn-icon" onClick={() => void lockNote(path)} aria-label={tr("Encrypt note")} data-tip={tr("Encrypt with a password")}><LockOpen size={16} /></button>}
+        <button className="btn btn-ghost btn-icon" onClick={() => useUi.getState().setDialog("mindmap")} aria-label={tr("Mind map")} data-tip={tr("Mind map of the headings")}><ListTree size={16} /></button>
         <button className="btn btn-ghost btn-icon" onClick={() => togglePin(path)} aria-label={pinned ? "Unpin note" : "Pin note"} data-tip={pinned ? "Unpin" : "Pin to top of the sidebar"}>{pinned ? <PinOff size={16} /> : <Pin size={16} />}</button>
-        <div className="segmented" role="group" aria-label="View mode">
+        <div className="segmented" role="group" aria-label={tr("View mode")}>
           {modes.map((m) => (
             <button key={m.id} aria-pressed={mode === m.id} onClick={() => setMode(m.id)}>{m.label}</button>
           ))}
@@ -136,9 +138,9 @@ export function NotePane({ path }: { path: string }) {
       {note.conflict !== null && (
         <div className="banner" role="alert">
           <CircleAlert size={16} />
-          <span className="flex-1">This file changed on disk while you have unsaved edits.</span>
-          <button className="btn" onClick={() => resolveConflict(path, true)}>Keep mine</button>
-          <button className="btn" onClick={() => resolveConflict(path, false)}>Load disk version</button>
+          <span className="flex-1">{tr("This file changed on disk while you have unsaved edits.")}</span>
+          <button className="btn" onClick={() => resolveConflict(path, true)}>{tr("Keep mine")}</button>
+          <button className="btn" onClick={() => resolveConflict(path, false)}>{tr("Load disk version")}</button>
         </div>
       )}
 
@@ -158,12 +160,12 @@ export function NotePane({ path }: { path: string }) {
       {unlockedHere && (
         <div className="banner" role="status">
           <LockOpen size={16} />
-          <span className="flex-1">Unlocked: the file on disk is plain text until you lock it again.</span>
+          <span className="flex-1">{tr("Unlocked: the file on disk is plain text until you lock it again.")}</span>
         </div>
       )}
 
       {props.length > 0 && (
-        <div className="props-bar" aria-label="Properties">
+        <div className="props-bar" aria-label={tr("Properties")}>
           {props.map(([k, v]) => (
             <span key={k} className="chip" data-tip={k}><b>{k}:</b> {propText(v)}</span>
           ))}
@@ -172,23 +174,23 @@ export function NotePane({ path }: { path: string }) {
 
       <div className="note-body" data-mode={mode}>
         {mode !== "preview" && (
-          <section className="note-editor-wrap" aria-label="Editor">
+          <section className="note-editor-wrap" aria-label={tr("Editor")}>
             <MarkdownEditor docKey={path} value={note.content} revision={note.revision} onChange={(v) => setContent(path, v)} options={options} autoFocus scrollToLine={jump} />
           </section>
         )}
         {mode !== "edit" && (
-          <section ref={previewRef} className="note-preview-wrap" aria-label="Preview">
+          <section ref={previewRef} className="note-preview-wrap" aria-label={tr("Preview")}>
             {note.content.trim() ? (
               <Preview path={path} content={note.content} embeds />
             ) : (
-              <div className="empty"><Squiggle style={{ color: "var(--amber)" }} /><p className="hand">Nothing here yet.</p><p>Start typing in the editor.</p></div>
+              <div className="empty"><Squiggle style={{ color: "var(--amber)" }} /><p className="hand">{tr("Nothing here yet.")}</p><p>{tr("Start typing in the editor.")}</p></div>
             )}
           </section>
         )}
       </div>
 
-      <div className="backlinks" aria-label="Backlinks">
-        <div className="handwritten-label" style={{ fontSize: "1.35rem" }}><Link2 size={14} className="inline mr-1" />Backlinks</div>
+      <div className="backlinks" aria-label={tr("Backlinks")}>
+        <div className="handwritten-label" style={{ fontSize: "1.35rem" }}><Link2 size={14} className="inline mr-1" />{tr("Backlinks")}</div>
         {backlinks && backlinks.length > 0 ? (
           <ul className="m-0 mt-1 p-0 list-none flex flex-wrap gap-2">
             {backlinks.map((p) => (

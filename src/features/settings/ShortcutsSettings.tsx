@@ -1,9 +1,11 @@
 import { useEffect, useState } from "react";
 import { ACTIONS, comboFromEvent, effectiveCombos, findConflict, formatCombo, isValidCombo, type ActionId } from "@/lib/shortcuts";
 import { useSettings } from "@/stores/settings";
+import { useTr } from "@/lib/i18n";
 
 /** Rebind the app-wide shortcuts: click one, press the new keys. Esc cancels. Conflicts are refused. */
 export function ShortcutsSettings() {
+  const tr = useTr();
   const overrides = useSettings((s) => s.settings.shortcuts);
   const update = useSettings((s) => s.update);
   const [capturing, setCapturing] = useState<ActionId | null>(null);
@@ -41,15 +43,15 @@ export function ShortcutsSettings() {
 
   return (
     <div className="px-5 pb-3">
-      <div className="handwritten-label" style={{ fontSize: "1.4rem" }}>Rebind shortcuts</div>
+      <div className="handwritten-label" style={{ fontSize: "1.4rem" }}>{tr("Rebind shortcuts")}</div>
       {message && <p role="alert" style={{ color: "var(--red)", fontWeight: 700, margin: "4px 0" }}>{message}</p>}
       {ACTIONS.map((a) => (
         <div key={a.id} className="shortcut-row" style={{ alignItems: "center", gap: 8 }}>
-          <span className="flex-1">{a.label}</span>
+          <span className="flex-1">{tr(a.label)}</span>
           <button className="btn" aria-pressed={capturing === a.id} onClick={() => { setMessage(null); setCapturing(capturing === a.id ? null : a.id); }}>
-            {capturing === a.id ? "Press keys… (Esc cancels)" : formatCombo(eff[a.id])}
+            {capturing === a.id ? tr("Press keys… (Esc cancels)") : formatCombo(eff[a.id])}
           </button>
-          <button className="btn btn-ghost" disabled={overrides[a.id] === undefined} onClick={() => set(a.id, null)} aria-label={`Reset ${a.label}`}>Reset</button>
+          <button className="btn btn-ghost" disabled={overrides[a.id] === undefined} onClick={() => set(a.id, null)} aria-label={`${tr("Reset")} ${tr(a.label)}`}>{tr("Reset")}</button>
         </div>
       ))}
     </div>

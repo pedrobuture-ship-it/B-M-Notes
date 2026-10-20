@@ -4,6 +4,7 @@ import { useWorkspace } from "@/stores/workspace";
 import { useUi } from "@/stores/ui";
 import { hashUnit } from "@/lib/board";
 import { EmptyBoard } from "@/components/doodles";
+import { useTr } from "@/lib/i18n";
 
 interface GNode { id: string; title: string; x: number; y: number; vx: number; vy: number; degree: number; tags: string[] }
 interface GEdge { s: string; t: string }
@@ -57,6 +58,7 @@ function wobblyPath(a: GNode, b: GNode): string {
 }
 
 export function GraphExplorer() {
+  const tr = useTr();
   const meta = useWorkspace((s) => s.index.meta);
   const tagsIdx = useWorkspace((s) => s.index.tags);
   const openNote = useUi((s) => s.openNote);
@@ -123,7 +125,7 @@ export function GraphExplorer() {
 
   if (nodes.length === 0) {
     return (
-      <div className="empty h-full"><EmptyBoard /><p className="hand">Nothing to explore yet.</p><p>Create notes and link them with [[wiki links]].</p></div>
+      <div className="empty h-full"><EmptyBoard /><p className="hand">{tr("Nothing to explore yet.")}</p><p>{tr("Create notes and link them with [[wiki links]].")}</p></div>
     );
   }
 
@@ -132,17 +134,17 @@ export function GraphExplorer() {
       <div className="board-hud">
         <div className="relative" style={{ width: 240 }}>
           <Search size={15} className="absolute" style={{ left: 10, top: 10, color: "var(--ink-faint)" }} />
-          <input className="field" style={{ paddingLeft: 32 }} placeholder="Find a note…" value={query} onChange={(e) => setQuery(e.target.value)} aria-label="Search the graph" />
+          <input className="field" style={{ paddingLeft: 32 }} placeholder={tr("Find a note…")} value={query} onChange={(e) => setQuery(e.target.value)} aria-label={tr("Search the graph")} />
         </div>
         {allTags.map(([t, p]) => (
           <button key={t} className="chip" data-active={tag === t} onClick={() => setTag(tag === t ? null : t)}>#{t} <span style={{ opacity: 0.6 }}>{p.length}</span></button>
         ))}
-        {(tag || query) && <button className="btn btn-ghost btn-icon" onClick={() => { setTag(null); setQuery(""); }} aria-label="Clear filters"><X size={14} /></button>}
+        {(tag || query) && <button className="btn btn-ghost btn-icon" onClick={() => { setTag(null); setQuery(""); }} aria-label={tr("Clear filters")}><X size={14} /></button>}
       </div>
       <svg
         ref={svgRef}
         role="img"
-        aria-label="Note graph"
+        aria-label={tr("Note graph")}
         onPointerDown={(e) => {
           if ((e.target as Element).closest(".graph-node")) return;
           (e.currentTarget as Element).setPointerCapture(e.pointerId);

@@ -10,6 +10,7 @@ import { useUi } from "@/stores/ui";
 import { useWorkspace } from "@/stores/workspace";
 import { SHORTCUTS, effectiveCombos, formatCombo } from "@/lib/shortcuts";
 import { ShortcutsSettings } from "./ShortcutsSettings";
+import { LANGUAGES, useTr } from "@/lib/i18n";
 import { ipc, type GithubDevice, type GithubUser } from "@/lib/ipc";
 import { LogoMark } from "@/components/doodles";
 
@@ -18,16 +19,17 @@ function NumberField({ value, min, max, step = 1, onChange, label }: { value: nu
 }
 
 export function ShortcutsList() {
+  const tr = useTr();
   const groups = ["General", "Mural", "Editor"] as const;
   const eff = effectiveCombos(useSettings((s) => s.settings.shortcuts));
   return (
     <div className="overflow-auto px-5 pb-5" style={{ maxHeight: "60vh" }}>
       {groups.map((g) => (
         <div key={g} className="mb-3">
-          <div className="handwritten-label" style={{ fontSize: "1.4rem" }}>{g}</div>
+          <div className="handwritten-label" style={{ fontSize: "1.4rem" }}>{tr(g)}</div>
           {SHORTCUTS.filter((s) => s.group === g).map((s) => (
             <div key={s.keys + s.label} className="shortcut-row">
-              <span>{s.label}</span>
+              <span>{tr(s.label)}</span>
               <span className="kbd">{s.action ? formatCombo(eff[s.action]) : s.keys}</span>
             </div>
           ))}
@@ -121,6 +123,7 @@ function GithubConnect({ children }: { children?: ReactNode }) {
 const SECTIONS = ["Appearance", "Editor", "Files", "Daily Notes", "Board", "Sync", "Backup", "Updates", "Plugins", "Keyboard"] as const;
 
 export function SettingsDialog() {
+  const tr = useTr();
   const setDialog = useUi((s) => s.setDialog);
   const { settings, update } = useSettings();
   const [section, setSection] = useState<(typeof SECTIONS)[number]>(() => {
@@ -134,7 +137,7 @@ export function SettingsDialog() {
       <div className="settings-grid">
         <nav className="settings-nav" aria-label="Settings sections">
           {SECTIONS.map((s) => (
-            <button key={s} className="tab" style={{ flexDirection: "row", justifyContent: "flex-start", padding: "6px 10px" }} aria-selected={section === s} onClick={() => setSection(s)}>{s}</button>
+            <button key={s} className="tab" style={{ flexDirection: "row", justifyContent: "flex-start", padding: "6px 10px" }} aria-selected={section === s} onClick={() => setSection(s)}>{tr(s)}</button>
           ))}
         </nav>
         <div className="settings-pane">
@@ -143,14 +146,19 @@ export function SettingsDialog() {
               <Row title="Theme">
                 <div className="segmented">
                   {(["dark", "light"] as const).map((t) => (
-                    <button key={t} aria-pressed={settings.appearance.theme === t} onClick={() => update((s) => ({ ...s, appearance: { ...s.appearance, theme: t } }))}>{t}</button>
+                    <button key={t} aria-pressed={settings.appearance.theme === t} onClick={() => update((s) => ({ ...s, appearance: { ...s.appearance, theme: t } }))}>{tr(t === "dark" ? "Dark" : "Light")}</button>
                   ))}
                 </div>
+              </Row>
+              <Row title="Language">
+                <select className="field" style={{ width: 200 }} aria-label={tr("Language")} value={settings.appearance.language} onChange={(e) => update((s) => ({ ...s, appearance: { ...s.appearance, language: e.target.value as "auto" | "en" | "pt-BR" } }))}>
+                  {LANGUAGES.map((l) => <option key={l.id} value={l.id}>{tr(l.label)}</option>)}
+                </select>
               </Row>
               <Row title="Card density">
                 <div className="segmented">
                   {(["cozy", "compact"] as const).map((d) => (
-                    <button key={d} aria-pressed={settings.appearance.density === d} onClick={() => update((s) => ({ ...s, appearance: { ...s.appearance, density: d } }))}>{d}</button>
+                    <button key={d} aria-pressed={settings.appearance.density === d} onClick={() => update((s) => ({ ...s, appearance: { ...s.appearance, density: d } }))}>{tr(d === "cozy" ? "Cozy" : "Compact")}</button>
                   ))}
                 </div>
               </Row>
@@ -208,26 +216,27 @@ export function SettingsDialog() {
         </div>
       </div>
       <div className="px-5 py-3" style={{ borderTop: "2px dashed var(--line-soft)", color: "var(--ink-faint)" }}>
-        Saved to <span className="kbd">.mural/settings.json</span> inside your workspace.
+        {tr("Saved to")} <span className="kbd">.mural/settings.json</span> {tr("inside your workspace.")}
       </div>
     </Dialog>
   );
 }
 
 export function AboutDialog() {
+  const tr = useTr();
   const setDialog = useUi((s) => s.setDialog);
   const root = useWorkspace((s) => s.info?.root);
   return (
     <Dialog title="About b&m notes" onClose={() => setDialog(null)} width={500}>
       <div className="px-5 pb-5 flex flex-col gap-3 selectable">
-        <div className="flex items-center gap-3"><LogoMark width={46} height={46} /><div><div className="handwritten-label" style={{ fontSize: "1.9rem" }}>b&amp;m notes</div><div style={{ color: "var(--ink-dim)" }}>Version 0.1.0 — a local-first spatial Markdown workspace.</div></div></div>
-        <p className="m-0 handwritten-label" style={{ fontSize: "1.5rem", color: "var(--ink)" }}>Your notes are just files.</p>
-        <div className="shortcut-row"><span>Data model</span><span>Plain Markdown + local assets.</span></div>
-        <div className="shortcut-row"><span>Mural metadata</span><span className="kbd">.mural/</span></div>
-        <div className="shortcut-row"><span>Network</span><span>None. No account, no cloud.</span></div>
-        {root && <div className="shortcut-row"><span>Workspace</span><span className="truncate" style={{ maxWidth: 300 }} title={root}>{root}</span></div>}
+        <div className="flex items-center gap-3"><LogoMark width={46} height={46} /><div><div className="handwritten-label" style={{ fontSize: "1.9rem" }}>b&amp;m notes</div><div style={{ color: "var(--ink-dim)" }}>{tr("Version 0.1.0 — a local-first spatial Markdown workspace.")}</div></div></div>
+        <p className="m-0 handwritten-label" style={{ fontSize: "1.5rem", color: "var(--ink)" }}>{tr("Your notes are just files.")}</p>
+        <div className="shortcut-row"><span>{tr("Data model")}</span><span>{tr("Plain Markdown + local assets.")}</span></div>
+        <div className="shortcut-row"><span>{tr("Mural metadata")}</span><span className="kbd">.mural/</span></div>
+        <div className="shortcut-row"><span>{tr("Network")}</span><span>{tr("Off by default. Only the optional GitHub sync and update check use it.")}</span></div>
+        {root && <div className="shortcut-row"><span>{tr("Workspace")}</span><span className="truncate" style={{ maxWidth: 300 }} title={root}>{root}</span></div>}
         <div className="flex justify-end">
-          <button className="btn" onClick={() => void ipc.reveal("").catch(() => {})}>Reveal workspace in filesystem</button>
+          <button className="btn" onClick={() => void ipc.reveal("").catch(() => {})}>{tr("Reveal workspace in filesystem")}</button>
         </div>
       </div>
     </Dialog>

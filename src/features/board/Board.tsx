@@ -497,7 +497,7 @@ export function Board() {
         onlyRenderVisibleElements
         nodeDragThreshold={3}
         colorMode={theme}
-        aria-label="Mural canvas"
+        aria-label={tr("Mural canvas")}
       >
         {settings.grid && <Background variant={BackgroundVariant.Dots} gap={22} size={1.6} color={theme === "light" ? "rgb(90 65 20 / 0.2)" : "rgb(255 255 255 / 0.11)"} />}
         {(guides.x !== null || guides.y !== null) && (
@@ -523,37 +523,37 @@ export function Board() {
       </div>
 
       <div className="board-hud">
-        <button className="btn" onClick={() => void rf.fitView({ duration: 350, padding: 0.15 })} data-tip="Fit board (Ctrl+0)"><Maximize size={15} /> Fit</button>
-        <button className="btn" onClick={() => void createFrameAt(flowCenter())} data-tip="New frame"><FrameIcon size={15} /> Frame</button>
-        <button className="btn" onClick={() => { const c = flowCenter(); void createNoteAt({ x: c.x - CARD_W / 2, y: c.y - CARD_H / 2 }); }} data-tip="New note on the mural (Ctrl+N)"><FilePlus size={15} /> Note</button>
+        <button className="btn" onClick={() => void rf.fitView({ duration: 350, padding: 0.15 })} data-tip={tr("Fit board (Ctrl+0)")}><Maximize size={15} /> {tr("Fit")}</button>
+        <button className="btn" onClick={() => void createFrameAt(flowCenter())} data-tip={tr("New frame")}><FrameIcon size={15} /> {tr("Frame")}</button>
+        <button className="btn" onClick={() => { const c = flowCenter(); void createNoteAt({ x: c.x - CARD_W / 2, y: c.y - CARD_H / 2 }); }} data-tip={tr("New note on the mural (Ctrl+N)")}><FilePlus size={15} /> {tr("Note")}</button>
       </div>
 
       {noteCount === 0 && (
         <div className="board-hint">
           <div className="empty" style={{ color: "var(--ink-faint)" }}>
             <EmptyBoard />
-            <p className="hand">Double-click anywhere to create your first note.</p>
+            <p className="hand">{tr("Double-click anywhere to create your first note.")}</p>
             <ArrowDoodle style={{ color: "var(--amber)" }} />
           </div>
         </div>
       )}
 
       {selectedCards.length > 1 && (
-        <div className="selection-bar" role="toolbar" aria-label="Selection actions">
+        <div className="selection-bar" role="toolbar" aria-label={tr("Selection actions")}>
           <span className="handwritten-label" style={{ fontSize: "1.25rem" }}><BoxSelect size={15} className="inline mr-1" />{selectedCards.length} notes</span>
           <Swatches onPick={recolorSelection} />
-          <div className="flex gap-1" role="group" aria-label="Align and distribute">
+          <div className="flex gap-1" role="group" aria-label={tr("Align and distribute")}>
             {([
               ["left", AlignStartVertical, "Align left"], ["hcenter", AlignCenterVertical, "Center horizontally"], ["right", AlignEndVertical, "Align right"],
               ["top", AlignStartHorizontal, "Align top"], ["vcenter", AlignCenterHorizontal, "Center vertically"], ["bottom", AlignEndHorizontal, "Align bottom"],
             ] as [AlignMode, typeof AlignStartVertical, string][]).map(([mode, Icon, label]) => (
               <button key={mode} className="btn btn-ghost btn-icon" onClick={() => applyLayout(alignRects(rectsOfSelection(), mode))} aria-label={label} data-tip={label}><Icon size={16} /></button>
             ))}
-            <button className="btn btn-ghost btn-icon" disabled={selectedCards.length < 3} onClick={() => applyLayout(distributeRects(rectsOfSelection(), "x"))} aria-label="Distribute horizontally" data-tip="Distribute horizontally"><AlignHorizontalDistributeCenter size={16} /></button>
-            <button className="btn btn-ghost btn-icon" disabled={selectedCards.length < 3} onClick={() => applyLayout(distributeRects(rectsOfSelection(), "y"))} aria-label="Distribute vertically" data-tip="Distribute vertically"><AlignVerticalDistributeCenter size={16} /></button>
+            <button className="btn btn-ghost btn-icon" disabled={selectedCards.length < 3} onClick={() => applyLayout(distributeRects(rectsOfSelection(), "x"))} aria-label={tr("Distribute horizontally")} data-tip={tr("Distribute horizontally")}><AlignHorizontalDistributeCenter size={16} /></button>
+            <button className="btn btn-ghost btn-icon" disabled={selectedCards.length < 3} onClick={() => applyLayout(distributeRects(rectsOfSelection(), "y"))} aria-label={tr("Distribute vertically")} data-tip={tr("Distribute vertically")}><AlignVerticalDistributeCenter size={16} /></button>
           </div>
-          <button className="btn" onClick={() => void groupInFrame()}><FrameIcon size={15} /> Group in frame</button>
-          <button className="btn btn-danger" onClick={() => void deleteSelection()}><Trash2 size={15} /> Delete</button>
+          <button className="btn" onClick={() => void groupInFrame()}><FrameIcon size={15} /> {tr("Group in frame")}</button>
+          <button className="btn btn-danger" onClick={() => void deleteSelection()}><Trash2 size={15} /> {tr("Delete")}</button>
         </div>
       )}
 

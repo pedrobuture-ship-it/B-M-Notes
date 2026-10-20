@@ -6,10 +6,12 @@ import { useSync } from "@/stores/sync";
 import { useUi } from "@/stores/ui";
 import { useWorkspace } from "@/stores/workspace";
 import { Row, Toggle } from "./controls";
+import { useTr } from "@/lib/i18n";
 
 type Mode = null | "create" | "pick" | "url";
 
 function CreateRepo({ onDone }: { onDone: () => void }) {
+  const tr = useTr();
   const link = useSync((s) => s.link);
   const busy = useSync((s) => s.busy);
   const folder = useWorkspace((s) => s.info?.name ?? "notes");
@@ -27,8 +29,8 @@ function CreateRepo({ onDone }: { onDone: () => void }) {
   };
   return (
     <div className="flex flex-col gap-2">
-      <input className="field" aria-label="Repository name" value={name} onChange={(e) => setName(e.target.value)} />
-      <label className="flex items-center gap-2"><Toggle label="Private repository" checked={isPrivate} onChange={setPrivate} /> Private repository</label>
+      <input className="field" aria-label={tr("Repository name")} value={name} onChange={(e) => setName(e.target.value)} />
+      <label className="flex items-center gap-2"><Toggle label="Private repository" checked={isPrivate} onChange={setPrivate} /> {tr("Private repository")}</label>
       {error && <p role="alert" style={{ color: "var(--red)", fontWeight: 700 }}>{error}</p>}
       <div><button className="btn btn-primary" disabled={busy || !name.trim()} onClick={() => void create()}>{busy ? "Creating…" : "Create and sync"}</button></div>
     </div>
@@ -36,6 +38,7 @@ function CreateRepo({ onDone }: { onDone: () => void }) {
 }
 
 function PickRepo({ onDone }: { onDone: () => void }) {
+  const tr = useTr();
   const link = useSync((s) => s.link);
   const busy = useSync((s) => s.busy);
   const [repos, setRepos] = useState<GithubRepo[] | null>(null);
@@ -47,9 +50,9 @@ function PickRepo({ onDone }: { onDone: () => void }) {
   const shown = (repos ?? []).filter((r) => r.fullName.toLowerCase().includes(filter.toLowerCase())).slice(0, 40);
   return (
     <div className="flex flex-col gap-2">
-      <input className="field" aria-label="Filter repositories" placeholder="Filter…" value={filter} onChange={(e) => setFilter(e.target.value)} />
+      <input className="field" aria-label={tr("Filter repositories")} placeholder={tr("Filter…")} value={filter} onChange={(e) => setFilter(e.target.value)} />
       {error && <p role="alert" style={{ color: "var(--red)", fontWeight: 700 }}>{error}</p>}
-      {!repos && !error && <small>Loading repositories…</small>}
+      {!repos && !error && <small>{tr("Loading repositories…")}</small>}
       <div className="overflow-auto flex flex-col gap-1" style={{ maxHeight: 200 }}>
         {shown.map((r) => (
           <button key={r.fullName} className="btn" style={{ justifyContent: "space-between" }} disabled={busy} onClick={async () => { if (await link(r.url)) onDone(); }}>
@@ -62,12 +65,13 @@ function PickRepo({ onDone }: { onDone: () => void }) {
 }
 
 function PasteUrl({ onDone }: { onDone: () => void }) {
+  const tr = useTr();
   const link = useSync((s) => s.link);
   const busy = useSync((s) => s.busy);
   const [url, setUrl] = useState("");
   return (
     <div className="flex gap-2">
-      <input className="field" aria-label="Repository" placeholder="owner/name or https://github.com/owner/name" value={url} onChange={(e) => setUrl(e.target.value)} />
+      <input className="field" aria-label={tr("Repository")} placeholder={tr("owner/name or https://github.com/owner/name")} value={url} onChange={(e) => setUrl(e.target.value)} />
       <button className="btn btn-primary" disabled={busy || !url.trim()} onClick={async () => { if (await link(url)) onDone(); }}>{busy ? "Linking…" : "Link"}</button>
     </div>
   );
@@ -83,6 +87,7 @@ function statusText(info: NonNullable<ReturnType<typeof useSync.getState>["info"
 }
 
 export function SyncPanel() {
+  const tr = useTr();
   const { info, busy, error, lastSync, syncNow, resolve, unlink } = useSync();
   const auto = useSettings((s) => s.settings.sync.auto);
   const presence = useSettings((s) => s.settings.sync.presence);
@@ -92,7 +97,7 @@ export function SyncPanel() {
 
   useEffect(() => { void useSync.getState().refresh(); }, []);
   if (!info) return null;
-  if (!info.gitAvailable) return <p role="alert" style={{ color: "var(--red)", fontWeight: 700 }}>Git is not installed. Install it to sync (https://git-scm.com).</p>;
+  if (!info.gitAvailable) return <p role="alert" style={{ color: "var(--red)", fontWeight: 700 }}>{tr("Git is not installed. Install it to sync (https://git-scm.com).")}</p>;
 
   if (!info.linked) {
     return (
@@ -127,26 +132,26 @@ export function SyncPanel() {
         <Toggle label="Show who is here" checked={presence} onChange={(v) => update((s) => ({ ...s, sync: { ...s.sync, presence: v } }))} />
       </Row>
       <div style={{ margin: "6px 0 12px" }}>
-        <div className="handwritten-label" style={{ fontSize: "1.3rem" }}>Private on this computer</div>
-        <small style={{ color: "var(--ink-faint)" }}>These are never uploaded. Right-click a note in the sidebar → “Keep private”, or the lock on a mural tab.</small>
-        {info.private.length === 0 ? <p className="m-0" style={{ color: "var(--ink-dim)" }}>Nothing is private.</p> : info.private.map((p) => (
+        <div className="handwritten-label" style={{ fontSize: "1.3rem" }}>{tr("Private on this computer")}</div>
+        <small style={{ color: "var(--ink-faint)" }}>{tr("These are never uploaded. Right-click a note in the sidebar → “Keep private”, or the lock on a mural tab.")}</small>
+        {info.private.length === 0 ? <p className="m-0" style={{ color: "var(--ink-dim)" }}>{tr("Nothing is private.")}</p> : info.private.map((p) => (
           <div key={p} className="flex items-center gap-2" style={{ padding: "2px 0" }}>
             <span className="flex-1">{p}</span>
-            <button className="btn" disabled={busy} onClick={() => void unsetPrivate(p)}>Share again</button>
+            <button className="btn" disabled={busy} onClick={() => void unsetPrivate(p)}>{tr("Share again")}</button>
           </div>
         ))}
       </div>
       {error && <p role="alert" style={{ color: "var(--red)", fontWeight: 700 }}>{error}</p>}
       {info.conflicts.length > 0 && (
         <div className="paper-card" style={{ padding: "12px 16px", margin: "8px 0 12px" }}>
-          <div className="handwritten-label" style={{ fontSize: "1.4rem" }}>Changed on both sides</div>
-          <small>Pick which version to keep for each note. Nothing is lost: “both” keeps the other version as a copy.</small>
+          <div className="handwritten-label" style={{ fontSize: "1.4rem" }}>{tr("Changed on both sides")}</div>
+          <small>{tr("Pick which version to keep for each note. Nothing is lost: “both” keeps the other version as a copy.")}</small>
           {info.conflicts.map((p) => (
             <div key={p} className="flex items-center gap-2 flex-wrap" style={{ marginTop: 8 }}>
               <span className="flex-1" style={{ minWidth: 120 }}>{p}</span>
-              <button className="btn" disabled={busy} onClick={() => void resolve(p, "mine")}>Keep mine</button>
-              <button className="btn" disabled={busy} onClick={() => void resolve(p, "theirs")}>Keep theirs</button>
-              <button className="btn" disabled={busy} onClick={() => void resolve(p, "both")}>Keep both</button>
+              <button className="btn" disabled={busy} onClick={() => void resolve(p, "mine")}>{tr("Keep mine")}</button>
+              <button className="btn" disabled={busy} onClick={() => void resolve(p, "theirs")}>{tr("Keep theirs")}</button>
+              <button className="btn" disabled={busy} onClick={() => void resolve(p, "both")}>{tr("Keep both")}</button>
             </div>
           ))}
         </div>

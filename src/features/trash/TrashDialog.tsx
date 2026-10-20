@@ -4,6 +4,7 @@ import { ipc, type TrashItem } from "@/lib/ipc";
 import { useSettings } from "@/stores/settings";
 import { useUi } from "@/stores/ui";
 import { useWorkspace } from "@/stores/workspace";
+import { useTr } from "@/lib/i18n";
 
 export function timeAgo(ms: number, now = Date.now()): string {
   const s = Math.max(0, Math.round((now - ms) / 1000));
@@ -20,6 +21,7 @@ export function timeAgo(ms: number, now = Date.now()): string {
 }
 
 export function TrashDialog() {
+  const tr = useTr();
   const setDialog = useUi((s) => s.setDialog);
   const days = useSettings((s) => s.settings.files.trashRetentionDays);
   const [items, setItems] = useState<TrashItem[] | null>(null);
@@ -76,22 +78,22 @@ export function TrashDialog() {
       </div>
       {error && <p role="alert" className="px-5" style={{ color: "var(--red)", fontWeight: 700 }}>{error}</p>}
       <div className="overflow-auto px-5" style={{ maxHeight: "50vh" }}>
-        {items === null && !error && <small>Loading…</small>}
-        {items?.length === 0 && <p style={{ color: "var(--ink-dim)", padding: "12px 0" }}>The trash is empty.</p>}
+        {items === null && !error && <small>{tr("Loading…")}</small>}
+        {items?.length === 0 && <p style={{ color: "var(--ink-dim)", padding: "12px 0" }}>{tr("The trash is empty.")}</p>}
         {items?.map((it) => (
           <div key={it.id} className="shortcut-row" style={{ alignItems: "center", gap: 10 }}>
             <div className="flex-1" style={{ minWidth: 0 }}>
               <div style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{it.isDir ? "📁 " : ""}{it.name}</div>
               <small style={{ color: "var(--ink-faint)" }}>{it.originalPath === it.name ? "" : `${it.originalPath} · `}Deleted {timeAgo(it.deletedAt)}</small>
             </div>
-            <button className="btn" onClick={() => void restore(it)}>Restore</button>
-            <button className="btn btn-danger" onClick={() => void remove(it)}>Delete permanently</button>
+            <button className="btn" onClick={() => void restore(it)}>{tr("Restore")}</button>
+            <button className="btn btn-danger" onClick={() => void remove(it)}>{tr("Delete permanently")}</button>
           </div>
         ))}
       </div>
       <div className="flex justify-between px-5 py-4">
-        <button className="btn btn-danger" disabled={!items?.length} onClick={() => void empty()}>Empty trash</button>
-        <button className="btn" onClick={() => setDialog(null)}>Close</button>
+        <button className="btn btn-danger" disabled={!items?.length} onClick={() => void empty()}>{tr("Empty trash")}</button>
+        <button className="btn" onClick={() => setDialog(null)}>{tr("Close")}</button>
       </div>
     </Dialog>
   );
