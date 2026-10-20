@@ -98,7 +98,7 @@
 .empty p { margin: 0; }
 .empty .hand { font-family: var(--font-hand); font-weight: 700; font-size: 1.7rem; color: var(--ink-dim); line-height: 1.05; }
 
-.onboarding { display: grid; place-items: center; height: 100%; padding: 24px; background: var(--bg); background-image: radial-gradient(circle at 1px 1px, rgb(255 255 255 / 0.07) 1px, transparent 0); background-size: 22px 22px; overflow: auto; }
+.onboarding { display: grid; place-items: center; height: 100%; padding: 24px; background: var(--bg); background-image: radial-gradient(circle at 1px 1px, var(--dot) 1px, transparent 0); background-size: 22px 22px; overflow: auto; }
 .onboarding-card { width: min(640px, 100%); padding: 36px 40px 32px; text-align: center; transform: rotate(-0.6deg); }
 .onboarding h1 { font-family: var(--font-hand); font-size: 4.2rem; margin: 0; line-height: 0.95; }
 .onboarding h1 b { color: var(--red); }

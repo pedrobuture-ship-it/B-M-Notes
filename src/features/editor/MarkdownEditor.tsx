@@ -38,7 +38,7 @@ const baseTheme = EditorView.theme(
     ".cm-content": { padding: "8px 18px", caretColor: "var(--amber)" },
     "&.cm-focused": { outline: "none" },
     ".cm-cursor": { borderLeftColor: "var(--amber)", borderLeftWidth: "2px" },
-    ".cm-activeLine": { backgroundColor: "rgb(255 255 255 / 0.035)" },
+    ".cm-activeLine": { backgroundColor: "var(--active-line)" },
     ".cm-selectionBackground, &.cm-focused .cm-selectionBackground, ::selection": { backgroundColor: "rgb(217 164 65 / 0.3) !important" },
     ".cm-gutters": { backgroundColor: "transparent", color: "var(--ink-faint)", border: "none" },
     ".cm-placeholder": { color: "var(--ink-faint)" },

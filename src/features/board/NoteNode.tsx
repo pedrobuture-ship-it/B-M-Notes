@@ -65,8 +65,8 @@ export const NoteNode = memo(function NoteNode({ data, selected, dragging }: Nod
   if (lod && !editing) {
     return (
       <div className="note-node paper-card note-lod" data-color={color} data-selected={selected} style={{ ["--tilt" as string]: tilt, opacity: dim ? 0.28 : 1, animation: "none" }}>
-        <Handle type="target" position={Position.Left} id="in" />
-        <Handle type="source" position={Position.Right} id="out" />
+        <Handle type="source" position={Position.Left} id="l" />
+        <Handle type="source" position={Position.Right} id="r" />
         <span>{stripExt(fileName)}</span>
       </div>
     );
@@ -99,8 +99,8 @@ export const NoteNode = memo(function NoteNode({ data, selected, dragging }: Nod
     >
       <NodeResizer minWidth={180} minHeight={110} isVisible={selected && !editing} onResizeEnd={(_, p) => useBoard.getState().patchCards({ [path]: { x: Math.round(p.x), y: Math.round(p.y), w: Math.round(p.width), h: Math.round(p.height) } })} lineStyle={{ borderColor: "var(--amber)", borderStyle: "dashed" }} />
       <span className="tape" aria-hidden="true" />
-      <Handle type="target" position={Position.Left} id="in" />
-      <Handle type="source" position={Position.Right} id="out" />
+      <Handle type="source" position={Position.Left} id="l" />
+      <Handle type="source" position={Position.Right} id="r" />
       <div className="note-head">
         <div className="fname" onDoubleClick={(e) => { e.stopPropagation(); setRenaming(path); }} title={path}>
           {renaming ? (

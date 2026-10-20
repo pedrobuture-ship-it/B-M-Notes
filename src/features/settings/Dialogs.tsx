@@ -71,7 +71,13 @@ export function SettingsDialog() {
         <div className="settings-pane">
           {section === "Appearance" && (
             <>
-              <Row title="Theme" hint="Light mode is planned for later."><span className="chip" data-active="true">Dark</span></Row>
+              <Row title="Theme">
+                <div className="segmented">
+                  {(["dark", "light"] as const).map((t) => (
+                    <button key={t} aria-pressed={settings.appearance.theme === t} onClick={() => update((s) => ({ ...s, appearance: { ...s.appearance, theme: t } }))}>{t}</button>
+                  ))}
+                </div>
+              </Row>
               <Row title="Card density">
                 <div className="segmented">
                   {(["cozy", "compact"] as const).map((d) => (

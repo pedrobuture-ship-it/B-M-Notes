@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { extractTags, extractTitle, extractWikiLinks, toggleCheckbox } from "./markdownText";
+import { extractTags, extractTitle, extractWikiLinks, removeWikiLinks, toggleCheckbox } from "./markdownText";
 import { slugify } from "./slug";
 import { createResolver } from "./wikiResolve";
 import { buildIndex, updateIndex } from "./noteIndex";
@@ -145,5 +145,18 @@ describe("relative asset paths and daily notes", () => {
     expect(dateStamp(d)).toBe("2026-01-05");
     expect(timeStamp(d)).toBe("2026-01-05-070809");
     expect(dailyTemplate("2026-01-05")).toBe("# 2026-01-05\n\n## Notes\n\n- \n\n## Tasks\n\n- [ ] \n");
+  });
+});
+
+describe("removeWikiLinks", () => {
+  const is = (t: string) => (x: string) => x === t;
+  it("removes a link alone on its line along with the line", () => {
+    expect(removeWikiLinks("# A\n\n[[b]]\n[[c]]\n", is("b"))).toBe("# A\n\n[[c]]\n");
+  });
+  it("removes an inline link and its leading space", () => {
+    expect(removeWikiLinks("see [[b]] now", is("b"))).toBe("see now");
+  });
+  it("removes aliased links and leaves code alone", () => {
+    expect(removeWikiLinks("x\n[[b|Bee]]\n`[[b]]`", is("b"))).toBe("x\n`[[b]]`");
   });
 });

@@ -18,14 +18,16 @@
 .react-flow__controls-button:hover { background: var(--surface-3); fill: var(--amber); }
 .react-flow__controls-button svg { fill: currentColor; }
 
-.react-flow__handle { width: 12px; height: 12px; background: var(--amber); border: 2px solid var(--bg); opacity: 0; transition: opacity 0.15s; }
-.note-node:hover .react-flow__handle, .react-flow__node.selected .react-flow__handle, .react-flow__handle.connectingfrom, .react-flow.connecting .react-flow__handle { opacity: 1; }
+.react-flow__handle { width: 16px; height: 16px; background: var(--amber); border: 2.5px solid var(--bg); border-radius: 50%; opacity: 0.6; cursor: crosshair; transition: opacity 0.15s, transform 0.15s var(--ease); }
+.react-flow__handle:hover, .note-node:hover .react-flow__handle, .react-flow__node.selected .react-flow__handle, .react-flow__handle.connectingfrom, .react-flow.connecting .react-flow__handle { opacity: 1; }
+.react-flow__handle-left:hover, .react-flow__handle-left.connectingto { transform: translate(-50%, -50%) scale(1.35); }
+.react-flow__handle-right:hover, .react-flow__handle-right.connectingto { transform: translate(50%, -50%) scale(1.35); }
 
 .react-flow__resize-control.handle { width: 11px; height: 11px; border: 2px solid var(--amber); background: var(--bg); border-radius: 3px 5px 3px 5px; }
 .react-flow__resize-control.line { border-color: transparent; }
 
 /* cards */
-.note-node { width: 100%; height: 100%; --tilt: 0deg; transform: rotate(var(--tilt)); animation: card-in 0.28s var(--ease) both; transition: box-shadow 0.18s, transform 0.18s var(--ease); display: flex; flex-direction: column; overflow: hidden; }
+.note-node { width: 100%; height: 100%; --tilt: 0deg; transform: rotate(var(--tilt)); animation: card-in 0.28s var(--ease) both; transition: box-shadow 0.18s, transform 0.18s var(--ease); display: flex; flex-direction: column; overflow: visible; }
 .note-node[data-dragging="true"] { box-shadow: var(--shadow-lift); transform: rotate(calc(var(--tilt) * 2.2)) scale(1.012); }
 .note-node[data-selected="true"] { outline: 2.5px dashed var(--amber); outline-offset: 4px; }
 .note-node[data-editing="true"] { transform: none; }
@@ -60,7 +62,6 @@
 .sketch-edge-path { fill: none; stroke: var(--ink-faint); stroke-width: 2.2; stroke-linecap: round; stroke-dasharray: var(--len, 600); animation: draw 0.7s var(--ease) both; }
 .sketch-edge-path.manual { stroke: var(--blue); }
 .sketch-edge-path.selected { stroke: var(--amber); stroke-width: 3; }
-.sketch-edge-path.pencil { stroke-width: 1; opacity: 0.55; }
 .sketch-edge-head { fill: none; stroke: var(--ink-faint); stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
 .sketch-edge-head.manual { stroke: var(--blue); }
 .sketch-edge-head.selected { stroke: var(--amber); }

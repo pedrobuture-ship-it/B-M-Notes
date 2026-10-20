@@ -73,6 +73,8 @@ export function App() {
   useEffect(() => {
     document.documentElement.style.setProperty("--ui-size", `${appearance.fontSize}px`);
     document.documentElement.dataset.density = appearance.density;
+    document.documentElement.dataset.theme = appearance.theme;
+    document.documentElement.style.colorScheme = appearance.theme;
   }, [appearance]);
 
   // Flush pending saves when the window is closing / hidden.

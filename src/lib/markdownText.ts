@@ -25,6 +25,28 @@ export function extractWikiLinks(content: string): WikiLink[] {
   return out;
 }
 
+/**
+ * Removes every wiki link whose target satisfies `matches`. A link alone on its line takes the whole line with it.
+ * Links inside code are left untouched.
+ */
+export function removeWikiLinks(content: string, matches: (target: string) => boolean): string {
+  const masked = maskCode(content);
+  const hits = [...masked.matchAll(WIKI)].filter((m) => matches((m[1] ?? "").trim()));
+  let out = content;
+  for (const m of hits.reverse()) {
+    let start = m.index;
+    let end = start + m[0].length;
+    const ls = out.lastIndexOf("\n", start - 1) + 1;
+    const le = out.indexOf("\n", end) === -1 ? out.length : out.indexOf("\n", end);
+    if (out.slice(ls, start).trim() === "" && out.slice(end, le).trim() === "") {
+      start = ls;
+      end = Math.min(out.length, le + 1);
+    } else if (out[start - 1] === " ") start -= 1;
+    out = out.slice(0, start) + out.slice(end);
+  }
+  return out;
+}
+
 export function extractTags(content: string): string[] {
   const masked = maskCode(content).replace(/^---\n[\s\S]*?\n---\n/, (m) => m.replace(/[^\n]/g, " "));
   const tags = new Set<string>();

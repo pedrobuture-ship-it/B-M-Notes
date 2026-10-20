@@ -115,7 +115,7 @@ button:disabled { cursor: not-allowed; }
 .btn:disabled { opacity: 0.45; }
 .btn-primary { background: var(--amber); border-color: var(--amber); color: #2a1f0b; font-weight: 700; }
 .btn-primary:hover:not(:disabled) { background: #e8b94f; border-color: #e8b94f; }
-.btn-danger { border-color: var(--red); color: #f0b3a5; }
+.btn-danger { border-color: var(--red); color: var(--danger-ink); }
 .btn-danger:hover:not(:disabled) { background: var(--red); border-color: var(--red); color: #fff; }
 .btn-ghost { border-color: transparent; background: transparent; }
 .btn-icon { padding: 5px 7px; }
@@ -182,14 +182,14 @@ button.chip:hover, .chip[data-active="true"] { color: var(--amber); border-color
   border-radius: 6px; color: var(--ink);
 }
 .menu-item:hover, .menu-item:focus-visible { background: var(--surface-3); color: var(--amber); outline: none; }
-.menu-item[data-danger="true"]:hover { color: #f4a594; }
+.menu-item[data-danger="true"]:hover { color: var(--danger-ink); }
 .menu-sep { height: 0; margin: 5px 6px; border-top: 2px dashed var(--line-soft); }
 .menu-label { padding: 3px 10px; font-size: 0.8em; color: var(--ink-faint); }
 
 /* dialogs */
 .dialog-backdrop {
   position: fixed; inset: 0; z-index: 70; display: grid; place-items: start center; padding-top: 12vh;
-  background: rgb(8 6 4 / 0.62);
+  background: var(--backdrop);
   animation: fade-in 0.16s ease-out;
 }
 .dialog-backdrop[data-center="true"] { place-items: center; padding-top: 0; }

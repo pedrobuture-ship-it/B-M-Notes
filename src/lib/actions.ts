@@ -1,12 +1,27 @@
 import { useUi } from "@/stores/ui";
 import { useWorkspace } from "@/stores/workspace";
 import { useSettings } from "@/stores/settings";
+import { useBoard } from "@/stores/board";
+import { removeWikiLinks } from "./markdownText";
 import { basename, dirname, stripExt } from "./paths";
 import { slugify } from "./slug";
 import { ipc } from "./ipc";
 
 export function resolveWikiTarget(target: string): string | null {
   return useWorkspace.getState().index.resolver.resolve(target);
+}
+
+/** Deletes a connection. Auto edges come from [[wiki links]], so the link text is removed from the source note. */
+export function removeEdge(id: string, source: string, target: string): void {
+  const board = useBoard.getState();
+  if (!id.startsWith("auto:")) {
+    board.removeConnection(id);
+    return;
+  }
+  const ws = useWorkspace.getState();
+  const note = ws.notes[source];
+  if (note) ws.setContent(source, removeWikiLinks(note.content, (t) => ws.index.resolver.resolve(t) === target));
+  board.setLabel(id, "");
 }
 
 /** Opens a wiki link; offers to create the note when it does not exist yet. */

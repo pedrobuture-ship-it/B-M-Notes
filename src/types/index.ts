@@ -60,7 +60,7 @@ export interface BoardData {
 }
 
 export interface Settings {
-  appearance: { density: "cozy" | "compact"; fontSize: number };
+  appearance: { theme: "dark" | "light"; density: "cozy" | "compact"; fontSize: number };
   editor: { lineNumbers: boolean; wordWrap: boolean; fontSize: number; autosaveDelay: number };
   files: { assetsFolder: string; ignoredFolders: string[]; dailyFolder: string };
   board: { grid: boolean; snap: boolean; showConnections: boolean };

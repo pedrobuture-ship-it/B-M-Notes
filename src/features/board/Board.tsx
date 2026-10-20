@@ -15,9 +15,10 @@ import { NoteNode, type NoteNodeData } from "./NoteNode";
 import { FrameNode, type FrameNodeData } from "./FrameNode";
 import { SketchEdge } from "./SketchEdge";
 import { onBoardCommand } from "./boardBus";
-import { copyPath, deleteEntry, duplicateNote, newFrameTitle, revealInFolder } from "@/lib/actions";
+import { copyPath, deleteEntry, removeEdge, duplicateNote, newFrameTitle, revealInFolder } from "@/lib/actions";
 import { CARD_COLORS, type CardColor } from "@/types";
 import { CARD_H, CARD_W } from "@/lib/board";
+import { basename, stripExt } from "@/lib/paths";
 
 const nodeTypes: NodeTypes = { note: NoteNode, frame: FrameNode };
 const edgeTypes: EdgeTypes = { sketch: SketchEdge };
@@ -55,12 +56,12 @@ export function Board() {
   const patchFrames = useBoard((s) => s.patchFrames);
   const addFrame = useBoard((s) => s.addFrame);
   const removeFrame = useBoard((s) => s.removeFrame);
-  const addConnection = useBoard((s) => s.addConnection);
   const setViewport = useBoard((s) => s.setViewport);
   const meta = useWorkspace((s) => s.index.meta);
   const noteCount = useWorkspace((s) => s.index.meta.size);
   const createNote = useWorkspace((s) => s.createNote);
   const settings = useSettings((s) => s.settings.board);
+  const theme = useSettings((s) => s.settings.appearance.theme);
   const tagFilter = useUi((s) => s.tagFilter);
   const tagMembers = useWorkspace((s) => (tagFilter ? s.index.tags.get(tagFilter) : undefined));
   const setEditing = useUi((s) => s.setEditingCard);
@@ -253,14 +254,19 @@ export function Board() {
     [persistNodes],
   );
 
-  const onConnect = useCallback(
-    (c: Connection) => {
-      if (!c.source || !c.target || c.source === c.target || c.source.startsWith(FRAME) || c.target.startsWith(FRAME)) return;
-      const id = addConnection(c.source, c.target);
-      setEdges((es) => es.map((e) => ({ ...e, selected: e.id === id })));
-    },
-    [addConnection],
-  );
+  // Connecting two cards writes a [[wiki link]] into the source note; the edge then appears from the link itself.
+  const onConnect = useCallback((c: Connection) => {
+    if (!c.source || !c.target || c.source === c.target || c.source.startsWith(FRAME) || c.target.startsWith(FRAME)) return;
+    const ws = useWorkspace.getState();
+    const note = ws.notes[c.source];
+    if (!note || !ws.notes[c.target]) return;
+    if (ws.index.meta.get(c.source)?.links.includes(c.target)) return;
+    const base = stripExt(basename(c.target));
+    const unique = ws.index.resolver.resolve(base) === c.target;
+    const name = unique ? base : stripExt(c.target);
+    const sep = note.content === "" || note.content.endsWith("\n") ? "" : "\n";
+    ws.setContent(c.source, `${note.content}${sep}[[${name}]]\n`);
+  }, []);
 
   const flowCenter = useCallback(() => {
     const el = document.querySelector(".board-root")?.getBoundingClientRect();
@@ -326,9 +332,7 @@ export function Board() {
 
   const deleteSelection = useCallback(async () => {
     if (selectedEdges.length) {
-      const manual = selectedEdges.filter((e) => !e.id.startsWith("auto:"));
-      manual.forEach((e) => useBoard.getState().removeConnection(e.id));
-      if (manual.length < selectedEdges.length) useUi.getState().toast("Links made by [[wiki links]] can't be deleted here — edit the note text.");
+      selectedEdges.forEach((e) => removeEdge(e.id, e.source, e.target));
       if (selectedCards.length === 0 && selectedFrames.length === 0) return;
     }
     selectedFrames.forEach((n) => removeFrame(n.id.slice(FRAME.length)));
@@ -412,16 +416,16 @@ export function Board() {
         snapGrid={[22, 22]}
         onlyRenderVisibleElements
         nodeDragThreshold={3}
-        colorMode="dark"
+        colorMode={theme}
         aria-label="Mural canvas"
       >
-        {settings.grid && <Background variant={BackgroundVariant.Dots} gap={22} size={1.6} color="rgb(255 255 255 / 0.11)" />}
+        {settings.grid && <Background variant={BackgroundVariant.Dots} gap={22} size={1.6} color={theme === "light" ? "rgb(90 65 20 / 0.2)" : "rgb(255 255 255 / 0.11)"} />}
         <Controls showInteractive={false} position="bottom-left" />
         <MiniMap
           pannable
           zoomable
           position="bottom-right"
-          maskColor="rgb(10 8 6 / 0.65)"
+          maskColor={theme === "light" ? "rgb(120 95 40 / 0.28)" : "rgb(10 8 6 / 0.65)"}
           nodeStrokeWidth={2}
           nodeColor={(n) => (n.type === "frame" ? "transparent" : (MINIMAP_COLORS[(n.data as NoteNodeData).color] ?? "#ece3cf"))}
         />
