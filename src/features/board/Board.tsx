@@ -21,7 +21,7 @@ import { NoteNode, type NoteNodeData } from "./NoteNode";
 import { FrameNode, type FrameNodeData } from "./FrameNode";
 import { SketchEdge } from "./SketchEdge";
 import { onBoardCommand } from "./boardBus";
-import { copyPath, deleteEntry, lockNote, removeEdge, duplicateNote, newFrameTitle, revealInFolder } from "@/lib/actions";
+import { copyPath, deleteEntry, lockNote, removeEdge, duplicateNote, newFrameTitle, otherMurals, revealInFolder, sendToMural } from "@/lib/actions";
 import { CARD_COLORS, type CardColor } from "@/types";
 import { CARD_H, CARD_W } from "@/lib/board";
 import { basename, stripExt } from "@/lib/paths";
@@ -98,12 +98,22 @@ export function Board() {
   const snapRef = useRef<{ id: string; x: number; y: number } | null>(null);
   const dragRef = useRef<{ frame: string; start: { x: number; y: number }; members: Map<string, { x: number; y: number }> } | null>(null);
 
-  /** "Add to <mural>" for every extra mural, and "Remove from this mural" when one of them is on screen. */
+  /**
+   * "Move to / Add to another mural…" (a searchable picker), and "Remove from this mural" when an extra one is on screen.
+   * Right-clicking a card that is part of a selection acts on every selected card.
+   */
   const boardEntries = (path: string): MenuEntry[] => {
     const st = useBoard.getState();
-    const others = st.boards.filter((b) => b.id !== MAIN_BOARD && b.id !== st.activeId);
-    const out: MenuEntry[] = others.map((b) => ({ label: `Add to mural: ${b.name}`, onSelect: () => void st.addToBoard(b.id, path) }));
-    if (st.activeId !== MAIN_BOARD) out.push({ label: "Remove from this mural", onSelect: () => st.removePaths(path, false) });
+    const picked = nodesRef.current.filter((n) => n.selected && n.type === "note").map((n) => n.id);
+    const paths = picked.includes(path) ? picked : [path];
+    const count = paths.length > 1 ? ` (${paths.length})` : "";
+    const curated = st.activeId !== MAIN_BOARD;
+    const out: MenuEntry[] = [];
+    if (otherMurals().length > 0) {
+      if (curated) out.push({ label: tr("Move to another mural…") + count, onSelect: () => void sendToMural(paths, "move") });
+      out.push({ label: tr("Add to another mural…") + count, onSelect: () => void sendToMural(paths, "add") });
+    }
+    if (curated) out.push({ label: tr("Remove from this mural") + count, onSelect: () => paths.forEach((p) => st.removePaths(p, false)) });
     return out.length ? [...out, { separator: true }] : [];
   };
 

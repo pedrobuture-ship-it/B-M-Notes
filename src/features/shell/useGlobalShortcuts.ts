@@ -38,7 +38,7 @@ export function useGlobalShortcuts(enabled: boolean) {
       const ui = useUi.getState();
       if (e.key === "Escape") {
         if (ui.editingCard) ui.setEditingCard(null);
-        else if (ui.zen && !ui.dialog && !ui.confirmReq && !ui.promptReq && !ui.choiceReq) ui.setZen(false);
+        else if (ui.zen && !ui.dialog && !ui.confirmReq && !ui.promptReq && !ui.choiceReq && !ui.pickReq) ui.setZen(false);
         return;
       }
       const combo = comboFromEvent(e);

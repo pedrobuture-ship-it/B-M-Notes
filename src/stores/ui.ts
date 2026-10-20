@@ -34,6 +34,19 @@ interface ChoiceReq {
   resolve: (value: string | null) => void;
 }
 
+export interface PickItem {
+  value: string;
+  label: string;
+  hint?: string;
+}
+
+interface PickReq {
+  title: string;
+  placeholder?: string;
+  items: PickItem[];
+  resolve: (value: string | null) => void;
+}
+
 interface PromptReq {
   title: string;
   label?: string;
@@ -86,6 +99,7 @@ interface UiState {
   confirmReq: ConfirmReq | null;
   promptReq: PromptReq | null;
   choiceReq: ChoiceReq | null;
+  pickReq: PickReq | null;
   setSidebarOpen: (v: boolean) => void;
   toggleSidebar: () => void;
   setSidebarTab: (t: SidebarTab) => void;
@@ -115,6 +129,9 @@ interface UiState {
   resolvePrompt: (v: string | null) => void;
   choose: (req: Omit<ChoiceReq, "resolve">) => Promise<string | null>;
   resolveChoice: (v: string | null) => void;
+  /** A searchable list to pick one item from (long lists, like murals). */
+  pick: (req: Omit<PickReq, "resolve">) => Promise<string | null>;
+  resolvePick: (v: string | null) => void;
 }
 
 let toastId = 1;
@@ -166,6 +183,7 @@ export const useUi = create<UiState>((set, get) => {
   confirmReq: null,
   promptReq: null,
   choiceReq: null,
+  pickReq: null,
   setSidebarOpen: (sidebarOpen) => set({ sidebarOpen }),
   toggleSidebar: () => set((s) => ({ sidebarOpen: !s.sidebarOpen })),
   setSidebarTab: (sidebarTab) => {
@@ -229,6 +247,14 @@ export const useUi = create<UiState>((set, get) => {
   resolvePrompt: (v) => {
     get().promptReq?.resolve(v);
     set({ promptReq: null });
+  },
+  pick: (req) => new Promise((resolve) => {
+    get().pickReq?.resolve(null);
+    set({ pickReq: { ...req, resolve } });
+  }),
+  resolvePick: (v) => {
+    get().pickReq?.resolve(v);
+    set({ pickReq: null });
   },
 };
 });

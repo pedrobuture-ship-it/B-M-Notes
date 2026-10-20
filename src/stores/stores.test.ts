@@ -167,6 +167,24 @@ describe("multiple murals", () => {
     await B.getState().deleteBoard("study-plan", paths());
     expect(B.getState().boards.map((b) => b.id)).toEqual(["main"]);
   });
+
+  it("moves cards from one extra mural to another, keeping their color", async () => {
+    const { useBoard: B } = await import("./board");
+    await useWorkspace.getState().openWorkspace("/w");
+    const paths = () => Object.keys(useWorkspace.getState().notes);
+    await B.getState().createBoard("Later", false, paths());
+    await B.getState().createBoard("Now", false, paths());
+    await B.getState().addToBoard("now", ["a.md", "b.md"]);
+    B.getState().patchCards({ "a.md": { color: "pink" } });
+    expect(await B.getState().moveToBoard("later", ["a.md"])).toBe(true);
+    expect(Object.keys(B.getState().board.cards)).toEqual(["b.md"]);
+    const later = JSON.parse(meta.get("boards/later.json") ?? "{}");
+    expect(later.cards["a.md"]).toMatchObject({ color: "pink" });
+    // Moving to the mural on screen is a no-op.
+    expect(await B.getState().moveToBoard("now", ["b.md"])).toBe(false);
+    await B.getState().switchBoard("later", paths());
+    expect(Object.keys(B.getState().board.cards)).toEqual(["a.md"]);
+  });
 });
 
 describe("navigation", () => {

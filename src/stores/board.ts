@@ -44,8 +44,10 @@ interface BoardState {
   createBoard: (name: string, copyCurrent: boolean, notePaths: string[]) => Promise<string>;
   renameBoard: (id: string, name: string) => Promise<void>;
   deleteBoard: (id: string, notePaths: string[]) => Promise<void>;
-  /** Adds a note to a (curated) mural, whether or not it is the one on screen. */
-  addToBoard: (id: string, path: string) => Promise<void>;
+  /** Adds notes to a (curated) mural, whether or not it is the one on screen. */
+  addToBoard: (id: string, paths: string | string[]) => Promise<void>;
+  /** Adds notes to another mural and takes them off the extra mural on screen. False if the target couldn't be written. */
+  moveToBoard: (id: string, paths: string[]) => Promise<boolean>;
   reset: () => void;
   syncPaths: (notePaths: string[]) => void;
   patchCards: (patch: Record<string, Partial<CardLayout>>) => void;
@@ -114,6 +116,31 @@ export const useBoard = create<BoardState>((set, get) => {
       } catch {
         /* an unreadable mural is left alone */
       }
+    }
+  };
+  /** Places `paths` on mural `id`, keeping the size and color each card has on the mural on screen. */
+  const addPaths = async (id: string, paths: string[]): Promise<boolean> => {
+    const here = get().board.cards;
+    const place = (b: BoardData): BoardData => {
+      const cards = autoLayout([...Object.keys(b.cards), ...paths], b.cards);
+      for (const p of paths) {
+        const src = here[p];
+        const dst = cards[p];
+        if (src && dst && !b.cards[p]) cards[p] = { ...dst, w: src.w, h: src.h, color: src.color };
+      }
+      return { ...b, cards };
+    };
+    if (id === get().activeId) {
+      mutate(place);
+      return true;
+    }
+    try {
+      const { content } = await ipc.readMeta(fileOf(id));
+      const cur = content ? normalizeBoard(JSON.parse(content)) : emptyBoard();
+      await ipc.writeMeta(fileOf(id), JSON.stringify(place(cur), null, 2));
+      return true;
+    } catch {
+      return false; // the mural file is unreadable; nothing to add to
     }
   };
 
@@ -215,19 +242,16 @@ export const useBoard = create<BoardState>((set, get) => {
       set({ boards: next });
       await writeIndex(next);
     },
-    addToBoard: async (id, path) => {
-      const place = (b: BoardData): BoardData => ({ ...b, cards: autoLayout([...Object.keys(b.cards), path], b.cards) });
-      if (id === get().activeId) {
-        mutate(place);
-        return;
-      }
-      try {
-        const { content } = await ipc.readMeta(fileOf(id));
-        const cur = content ? normalizeBoard(JSON.parse(content)) : emptyBoard();
-        await ipc.writeMeta(fileOf(id), JSON.stringify(place(cur), null, 2));
-      } catch {
-        /* the mural file is unreadable; nothing to add to */
-      }
+    addToBoard: async (id, paths) => {
+      await addPaths(id, Array.isArray(paths) ? paths : [paths]);
+    },
+    moveToBoard: async (id, paths) => {
+      const from = get().activeId;
+      if (id === from || paths.length === 0) return false;
+      if (!(await addPaths(id, paths))) return false;
+      // "Main" shows every note, so there is nothing to take the cards off.
+      if (from !== MAIN_BOARD) for (const p of paths) get().removePaths(p, false);
+      return true;
     },
     syncPaths: (notePaths) => {
       const { board, ready } = get();

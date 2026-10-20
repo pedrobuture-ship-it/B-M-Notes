@@ -1,6 +1,7 @@
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { X } from "lucide-react";
-import { useUi } from "@/stores/ui";
+import { useUi, type PickItem } from "@/stores/ui";
+import { fuzzyScore } from "@/lib/search";
 import { useTr } from "@/lib/i18n";
 
 export function Dialog({ title, onClose, children, width, center = false }: { title?: string; onClose: () => void; children: ReactNode; width?: number; center?: boolean }) {
@@ -127,6 +128,71 @@ export function PromptDialog() {
           <button type="submit" className="btn btn-primary" disabled={!value.trim()}>{tr(req.confirmLabel ?? "OK")}</button>
         </div>
       </form>
+    </Dialog>
+  );
+}
+
+export function PickDialog() {
+  const req = useUi((s) => s.pickReq);
+  const resolve = useUi((s) => s.resolvePick);
+  const tr = useTr();
+  const [query, setQuery] = useState("");
+  const [sel, setSel] = useState(0);
+  const listRef = useRef<HTMLDivElement>(null);
+  const close = useCallback(() => resolve(null), [resolve]);
+  useEffect(() => {
+    setQuery("");
+    setSel(0);
+  }, [req]);
+  const items = useMemo(() => {
+    if (!req) return [];
+    const q = query.trim();
+    if (!q) return req.items;
+    return req.items
+      .map((it) => ({ it, s: fuzzyScore(it.label, q) }))
+      .filter((x): x is { it: PickItem; s: number } => x.s !== null)
+      .sort((a, b) => b.s - a.s)
+      .map((x) => x.it);
+  }, [req, query]);
+  useEffect(() => setSel(0), [query]);
+  useEffect(() => {
+    listRef.current?.querySelector('[aria-selected="true"]')?.scrollIntoView({ block: "nearest" });
+  }, [sel]);
+  if (!req) return null;
+  return (
+    <Dialog title={req.title} onClose={close} width={460} center>
+      <div className="px-5 pb-2">
+        <input
+          className="field"
+          autoFocus
+          autoComplete="off"
+          spellCheck={false}
+          placeholder={tr(req.placeholder ?? "Type to filter…")}
+          aria-label={tr(req.placeholder ?? "Type to filter…")}
+          role="combobox"
+          aria-expanded="true"
+          aria-controls="pick-list"
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === "ArrowDown") { e.preventDefault(); setSel((s) => Math.min(items.length - 1, s + 1)); }
+            if (e.key === "ArrowUp") { e.preventDefault(); setSel((s) => Math.max(0, s - 1)); }
+            if (e.key === "Enter" && items[sel]) { e.preventDefault(); resolve(items[sel].value); }
+          }}
+        />
+      </div>
+      <div className="palette-list" id="pick-list" role="listbox" ref={listRef} style={{ maxHeight: 320, padding: "0 12px 12px" }}>
+        {items.length === 0 ? (
+          <p className="m-0 py-3 text-center" style={{ color: "var(--ink-faint)" }}>{tr("Nothing matches.")}</p>
+        ) : (
+          items.map((it, i) => (
+            <button key={it.value} role="option" aria-selected={i === sel} className="palette-item" onMouseMove={() => setSel(i)} onClick={() => resolve(it.value)}>
+              <span className="flex-1 truncate">{it.label}</span>
+              {it.hint && <span className="text-xs shrink-0" style={{ color: "var(--ink-faint)" }}>{it.hint}</span>}
+            </button>
+          ))
+        )}
+      </div>
     </Dialog>
   );
 }

@@ -16,7 +16,7 @@ sync with GitHub to share a folder, or check for updates.
 - **Infinite canvas**: pan, zoom, minimap, multi-select, resizable cards, dashed frames, light and dark (parchment) themes.
 - **Linking by dragging**: every card has a dot on each side. Drag from one card to another and the `[[link]]` is written into the source note for you. Select an arrow and press **Delete** to remove it, and its `[[link]]` disappears from the `.md` too.
 - **Wiki links** (`[[note]]`, `[[folder/note|alias]]`, `[[note#Section]]`) become hand-drawn arrows, with optional labels.
-- **Several murals per folder**: "Main" shows every note; extra murals hold only the notes you add. Right-click a card → *Add to mural*. Delete on an extra mural only removes the card, never the file.
+- **Several murals per folder**: "Main" shows every note; extra murals hold only the notes you add. Right-click a card → *Move to / Add to another mural…* and pick it from a searchable list (works on every selected card, and keeps size and color). Delete on an extra mural only removes the card, never the file.
 - **Layout help**: magnetic alignment guides, align/distribute buttons, task progress on cards (`☑ 3/5`), full keyboard navigation (arrows, Enter, Shift+arrows).
 - **Other views**: a **Graph** of every note and link, a **Timeline**, a **mind map** of a note's headings, and export of a mural as a standalone **HTML page**.
 
@@ -263,7 +263,6 @@ Press **Ctrl + /** in the app for the full list. App shortcuts can be changed in
 
 ## Roadmap
 
-- Move a card between murals in one step
 - Signed releases and auto-install updates (opt-in)
 
 ## License

@@ -2,14 +2,13 @@ import { useMemo, useState, type ReactNode } from "react";
 import { ChevronRight, FileText, History, Pin, Search, FilePlus, Folder, FolderOpen, FolderPlus, Hash, Network, StickyNote, Trash2, X } from "lucide-react";
 import { useWorkspace } from "@/stores/workspace";
 import { useUi, type SidebarTab } from "@/stores/ui";
-import { useBoard, MAIN_BOARD } from "@/stores/board";
 import { useSettings } from "@/stores/settings";
 import { useSync } from "@/stores/sync";
 import { Menu, useContextMenu, type MenuEntry } from "@/components/Menu";
 import { EmptyFiles, EmptyTags } from "@/components/doodles";
 import { VirtualList } from "@/components/VirtualList";
 import { basename, dirname, stripExt } from "@/lib/paths";
-import { copyPath, deleteEntry, deleteSavedSearch, isPinned, isPrivate, lockNote, newFolder, togglePrivate, newNote, renameEntry, revealInFolder, togglePin } from "@/lib/actions";
+import { copyPath, deleteEntry, deleteSavedSearch, isPinned, isPrivate, lockNote, newFolder, otherMurals, sendToMural, togglePrivate, newNote, renameEntry, revealInFolder, togglePin } from "@/lib/actions";
 import { ipc } from "@/lib/ipc";
 import type { TreeNode } from "@/types";
 import { useTr } from "@/lib/i18n";
@@ -302,6 +301,7 @@ function TreeRow({ node, depth, expanded: isOpen, toggle, expand, openMenu }: It
   const active = useUi((s) => s.activeNote);
   const openNote = useUi((s) => s.openNote);
   const move = useWorkspace((s) => s.moveEntry);
+  const tr = useTr();
   const [drop, setDrop] = useState(false);
 
   const entries: MenuEntry[] = node.isDir
@@ -322,7 +322,7 @@ function TreeRow({ node, depth, expanded: isOpen, toggle, expand, openMenu }: It
         { label: "Rename", onSelect: () => void renameEntry(node.path, false) },
         { label: "Move to…", onSelect: () => void promptMove(node.path) },
         { label: "Encrypt with a password…", onSelect: () => void lockNote(node.path) },
-        ...useBoard.getState().boards.filter((b) => b.id !== MAIN_BOARD).map((b) => ({ label: `Add to mural: ${b.name}`, onSelect: () => void useBoard.getState().addToBoard(b.id, node.path) })),
+        ...(otherMurals(true).length > 0 ? [{ label: tr("Add to a mural…"), onSelect: () => void sendToMural([node.path], "add", true) }] : []),
         ...privateEntry(node.path),
         { label: "Reveal in file manager", onSelect: () => void revealInFolder(node.path) },
         { label: "Copy path", onSelect: () => void copyPath(node.path) },

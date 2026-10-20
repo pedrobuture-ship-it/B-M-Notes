@@ -1,7 +1,8 @@
 import { useUi } from "@/stores/ui";
 import { useWorkspace } from "@/stores/workspace";
 import { useSettings } from "@/stores/settings";
-import { useBoard } from "@/stores/board";
+import { useBoard, MAIN_BOARD } from "@/stores/board";
+import { tr } from "./i18n";
 import { removeWikiLinks } from "./markdownText";
 import { basename, dirname, stripExt } from "./paths";
 import { slugify } from "./slug";
@@ -225,4 +226,33 @@ export async function togglePrivate(path: string): Promise<void> {
 
 export function isPrivate(path: string): boolean {
   return useSync.getState().info?.private.includes(path) ?? false;
+}
+
+/** Extra murals other than the one on screen, so the card menu can offer "add / move to another mural". */
+export function otherMurals(includeCurrent = false) {
+  const { boards, activeId } = useBoard.getState();
+  return boards.filter((b) => b.id !== MAIN_BOARD && (includeCurrent || b.id !== activeId));
+}
+
+/** Asks which extra mural to use (searchable, for long lists) and adds or moves `paths` there. */
+export async function sendToMural(paths: string[], mode: "add" | "move", includeCurrent = false): Promise<void> {
+  const murals = otherMurals(includeCurrent && mode === "add");
+  const ui = useUi.getState();
+  if (paths.length === 0 || murals.length === 0) return;
+  const n = paths.length;
+  const id = await ui.pick({
+    title: mode === "move" ? (n > 1 ? tr("Move {n} notes to…", { n }) : tr("Move to mural…")) : (n > 1 ? tr("Add {n} notes to…", { n }) : tr("Add to mural…")),
+    placeholder: "Search murals…",
+    items: murals.map((b) => ({ value: b.id, label: b.name, hint: b.id === useBoard.getState().activeId ? tr("on screen") : undefined })),
+  });
+  const target = murals.find((b) => b.id === id);
+  if (!target) return;
+  const board = useBoard.getState();
+  if (mode === "move") {
+    const ok = await board.moveToBoard(target.id, paths);
+    ui.toast(ok ? tr("Moved to {name}", { name: target.name }) : tr("Couldn't write that mural."), ok ? "success" : "error");
+  } else {
+    await board.addToBoard(target.id, paths);
+    ui.toast(tr("Added to {name}", { name: target.name }), "success");
+  }
 }

@@ -12,7 +12,7 @@ import { CommandPalette } from "@/features/search/CommandPalette";
 import { SettingsDialog, ShortcutsDialog, AboutDialog } from "@/features/settings/Dialogs";
 import { useGlobalShortcuts } from "@/features/shell/useGlobalShortcuts";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
-import { ChoiceDialog, ConfirmDialog, PromptDialog, Toasts } from "@/components/Dialogs";
+import { ChoiceDialog, ConfirmDialog, PickDialog, PromptDialog, Toasts } from "@/components/Dialogs";
 import { useWorkspace, getLastWorkspace } from "@/stores/workspace";
 import { useSettings } from "@/stores/settings";
 import { useBoard } from "@/stores/board";
@@ -149,6 +149,7 @@ export function App() {
       {info && dialog === "record" && <RecordDialog />}
       <ConfirmDialog />
       <ChoiceDialog />
+      <PickDialog />
       <PromptDialog />
       <Toasts />
     </ReactFlowProvider>
