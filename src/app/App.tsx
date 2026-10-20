@@ -19,6 +19,7 @@ import { useUi } from "@/stores/ui";
 import { basename } from "@/lib/paths";
 import { ipc } from "@/lib/ipc";
 import { TemplateDialog } from "@/features/templates/TemplateDialog";
+import { PropertiesDialog } from "@/features/properties/PropertiesDialog";
 import { TasksDialog } from "@/features/tasks/TasksDialog";
 import { TrashDialog } from "@/features/trash/TrashDialog";
 import { useAutoSync } from "@/features/shell/useAutoSync";
@@ -115,6 +116,7 @@ export function App() {
       {info && dialog === "trash" && <TrashDialog />}
       {info && dialog === "templates" && <TemplateDialog />}
       {info && dialog === "tasks" && <TasksDialog />}
+      {info && dialog === "properties" && <PropertiesDialog />}
       <ConfirmDialog />
       <ChoiceDialog />
       <PromptDialog />

@@ -42,6 +42,23 @@ interface PromptReq {
   resolve: (value: string | null) => void;
 }
 
+export interface NavEntry {
+  view: MainView;
+  note: string | null;
+}
+
+const RECENT_MAX = 8;
+const recentKey = (root: string) => `bm.recent:${root}`;
+
+function loadRecent(root: string): string[] {
+  try {
+    const v = JSON.parse(localStorage.getItem(recentKey(root)) ?? "[]") as unknown;
+    return Array.isArray(v) ? v.filter((x): x is string => typeof x === "string").slice(0, RECENT_MAX) : [];
+  } catch {
+    return [];
+  }
+}
+
 interface UiState {
   sidebarOpen: boolean;
   sidebarTab: SidebarTab;
@@ -52,6 +69,12 @@ interface UiState {
   settingsSection: string;
   /** Section slug to scroll to after opening a note through a [[note#section]] link. */
   pendingHeading: string | null;
+  /** Query to open the search dialog with (saved searches). */
+  searchPrefill: string | null;
+  navRoot: string;
+  history: NavEntry[];
+  histIdx: number;
+  recent: string[];
   tagFilter: string | null;
   editingCard: string | null;
   renamingCard: string | null;
@@ -69,6 +92,13 @@ interface UiState {
   setDialog: (d: DialogName) => void;
   openSettings: (section: string) => void;
   setPendingHeading: (h: string | null) => void;
+  openSearch: (query: string) => void;
+  /** Starts a fresh navigation history for a (re)opened workspace. */
+  resetNav: (root: string) => void;
+  goBack: () => void;
+  goForward: () => void;
+  forgetRecent: (path: string) => void;
+  remapRecent: (map: (p: string) => string) => void;
   setTagFilter: (t: string | null) => void;
   setEditingCard: (p: string | null) => void;
   setRenamingCard: (p: string | null) => void;
@@ -84,7 +114,32 @@ interface UiState {
 
 let toastId = 1;
 
-export const useUi = create<UiState>((set, get) => ({
+function saveRecent(root: string, recent: string[]) {
+  if (!root) return;
+  try {
+    localStorage.setItem(recentKey(root), JSON.stringify(recent));
+  } catch {
+    /* recents are a convenience */
+  }
+}
+
+export const useUi = create<UiState>((set, get) => {
+  /** Records a navigation step (dropping any "forward" entries), skipping repeats. */
+  const push = (e: NavEntry) => {
+    const { history, histIdx } = get();
+    const cur = history[histIdx];
+    if (cur && cur.view === e.view && cur.note === e.note) return;
+    const next = [...history.slice(0, histIdx + 1), e].slice(-50);
+    set({ history: next, histIdx: next.length - 1 });
+  };
+  const step = (dir: -1 | 1) => {
+    const { history, histIdx } = get();
+    const to = histIdx + dir;
+    const e = history[to];
+    if (!e) return;
+    set({ histIdx: to, view: e.view, activeNote: e.note ?? get().activeNote, editingCard: null, dialog: null });
+  };
+  return {
   sidebarOpen: true,
   sidebarTab: "files",
   view: "board",
@@ -93,6 +148,11 @@ export const useUi = create<UiState>((set, get) => ({
   dialog: null,
   settingsSection: "Appearance",
   pendingHeading: null,
+  searchPrefill: null,
+  navRoot: "",
+  history: [{ view: "board", note: null }],
+  histIdx: 0,
+  recent: [],
   tagFilter: null,
   editingCard: null,
   renamingCard: null,
@@ -102,14 +162,43 @@ export const useUi = create<UiState>((set, get) => ({
   choiceReq: null,
   setSidebarOpen: (sidebarOpen) => set({ sidebarOpen }),
   toggleSidebar: () => set((s) => ({ sidebarOpen: !s.sidebarOpen })),
-  setSidebarTab: (sidebarTab) => set({ sidebarTab, sidebarOpen: true, ...(sidebarTab === "explore" ? { view: "graph" as const } : {}) }),
-  setView: (view) => set({ view, editingCard: null }),
-  openNote: (path) => set({ activeNote: path, view: "note", editingCard: null, dialog: null }),
-  closeNote: () => set({ activeNote: null, view: "board" }),
+  setSidebarTab: (sidebarTab) => {
+    set({ sidebarTab, sidebarOpen: true, ...(sidebarTab === "explore" ? { view: "graph" as const } : {}) });
+    if (sidebarTab === "explore") push({ view: "graph", note: null });
+  },
+  setView: (view) => {
+    set({ view, editingCard: null });
+    push({ view, note: view === "note" ? get().activeNote : null });
+  },
+  openNote: (path) => {
+    set({ activeNote: path, view: "note", editingCard: null, dialog: null });
+    push({ view: "note", note: path });
+    const recent = [path, ...get().recent.filter((p) => p !== path)].slice(0, RECENT_MAX);
+    set({ recent });
+    saveRecent(get().navRoot, recent);
+  },
+  closeNote: () => {
+    set({ activeNote: null, view: "board" });
+    push({ view: "board", note: null });
+  },
   setNoteMode: (noteMode) => set({ noteMode }),
   setDialog: (dialog) => set({ dialog }),
   openSettings: (settingsSection) => set({ settingsSection, dialog: "settings" }),
   setPendingHeading: (pendingHeading) => set({ pendingHeading }),
+  openSearch: (query) => set({ searchPrefill: query, dialog: "search" }),
+  resetNav: (root) => set({ navRoot: root, history: [{ view: "board", note: null }], histIdx: 0, recent: root ? loadRecent(root) : [] }),
+  goBack: () => step(-1),
+  goForward: () => step(1),
+  forgetRecent: (path) => {
+    const recent = get().recent.filter((p) => p !== path);
+    set({ recent });
+    saveRecent(get().navRoot, recent);
+  },
+  remapRecent: (map) => {
+    const recent = get().recent.map(map);
+    set({ recent });
+    saveRecent(get().navRoot, recent);
+  },
   setTagFilter: (tagFilter) => set({ tagFilter }),
   setEditingCard: (editingCard) => set({ editingCard }),
   setRenamingCard: (renamingCard) => set({ renamingCard }),
@@ -134,4 +223,5 @@ export const useUi = create<UiState>((set, get) => ({
     get().promptReq?.resolve(v);
     set({ promptReq: null });
   },
-}));
+};
+});

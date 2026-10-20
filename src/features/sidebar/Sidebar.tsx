@@ -1,13 +1,14 @@
-import { useMemo, useState } from "react";
-import { ChevronRight, FileText, FilePlus, Folder, FolderOpen, FolderPlus, Hash, Network, StickyNote, Trash2, X } from "lucide-react";
+import { useMemo, useState, type ReactNode } from "react";
+import { ChevronRight, FileText, History, Pin, Search, FilePlus, Folder, FolderOpen, FolderPlus, Hash, Network, StickyNote, Trash2, X } from "lucide-react";
 import { useWorkspace } from "@/stores/workspace";
 import { useUi, type SidebarTab } from "@/stores/ui";
 import { useBoard, MAIN_BOARD } from "@/stores/board";
+import { useSettings } from "@/stores/settings";
 import { Menu, useContextMenu, type MenuEntry } from "@/components/Menu";
 import { EmptyFiles, EmptyTags } from "@/components/doodles";
 import { VirtualList } from "@/components/VirtualList";
 import { basename, dirname, stripExt } from "@/lib/paths";
-import { copyPath, deleteEntry, newFolder, newNote, renameEntry, revealInFolder } from "@/lib/actions";
+import { copyPath, deleteEntry, deleteSavedSearch, isPinned, newFolder, newNote, renameEntry, revealInFolder, togglePin } from "@/lib/actions";
 import { ipc } from "@/lib/ipc";
 import type { TreeNode } from "@/types";
 
@@ -68,6 +69,7 @@ function NotesPanel() {
   }, [meta, tags, filter]);
   return (
     <div className="flex flex-col min-h-0 h-full">
+      {!filter && <NavSections />}
       {filter && (
         <div className="px-2 pb-2 flex items-center gap-2">
           <span className="chip" data-active="true">#{filter}</span>
@@ -92,6 +94,43 @@ function NotesPanel() {
           )}
         />
       )}
+    </div>
+  );
+}
+
+/** Saved searches, pinned notes and recently opened notes, above the full list. */
+function NavSections() {
+  const saved = useSettings((s) => s.settings.search.saved);
+  const pinned = useSettings((s) => s.settings.nav.pinned);
+  const recent = useUi((s) => s.recent);
+  const meta = useWorkspace((s) => s.index.meta);
+  const active = useUi((s) => s.activeNote);
+  const openNote = useUi((s) => s.openNote);
+  const pinnedList = pinned.filter((p) => meta.has(p));
+  const recentList = recent.filter((p) => meta.has(p) && !pinnedList.includes(p)).slice(0, 5);
+  if (!saved.length && !pinnedList.length && !recentList.length) return null;
+  const row = (p: string, icon: ReactNode) => (
+    <button key={p} className="tree-row" data-active={active === p} onClick={() => openNote(p)} data-tip={p}>
+      {icon}
+      <span className="label">{meta.get(p)?.title ?? p}</span>
+    </button>
+  );
+  return (
+    <div className="nav-sections">
+      {saved.length > 0 && <div className="nav-heading">Saved searches</div>}
+      {saved.map((s) => (
+        <div key={s.id} className="flex items-center">
+          <button className="tree-row flex-1" onClick={() => useUi.getState().openSearch(s.query)} data-tip={s.query}>
+            <Search size={14} />
+            <span className="label">{s.name}</span>
+          </button>
+          <button className="btn btn-ghost btn-icon" onClick={() => deleteSavedSearch(s.id)} aria-label={`Remove saved search ${s.name}`}><X size={12} /></button>
+        </div>
+      ))}
+      {pinnedList.length > 0 && <div className="nav-heading">Pinned</div>}
+      {pinnedList.map((p) => row(p, <Pin size={14} />))}
+      {recentList.length > 0 && <div className="nav-heading">Recent</div>}
+      {recentList.map((p) => row(p, <History size={14} />))}
     </div>
   );
 }
@@ -264,6 +303,7 @@ function TreeRow({ node, depth, expanded: isOpen, toggle, expand, openMenu }: It
       ]
     : [
         { label: "Open", onSelect: () => openNote(node.path) },
+        { label: isPinned(node.path) ? "Unpin" : "Pin to top", onSelect: () => togglePin(node.path) },
         { label: "Rename", onSelect: () => void renameEntry(node.path, false) },
         { label: "Move to…", onSelect: () => void promptMove(node.path) },
         ...useBoard.getState().boards.filter((b) => b.id !== MAIN_BOARD).map((b) => ({ label: `Add to mural: ${b.name}`, onSelect: () => void useBoard.getState().addToBoard(b.id, node.path) })),

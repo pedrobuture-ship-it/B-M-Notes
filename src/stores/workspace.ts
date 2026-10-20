@@ -188,6 +188,7 @@ export const useWorkspace = create<WorkspaceState>((set, get) => {
         const ui = useUi.getState();
         ui.setView("board");
         useUi.setState({ activeNote: null, tagFilter: null });
+        ui.resetNav(info.root);
         setLastWorkspace(path);
         unlisten?.();
         unlisten = await ipc.onFsChange((c) => void get().handleFsChange(c)).then((u) => u);
@@ -213,6 +214,7 @@ export const useWorkspace = create<WorkspaceState>((set, get) => {
       useSettings.getState().reset();
       setLastWorkspace(null);
       useUi.setState({ activeNote: null, view: "board", editingCard: null });
+      useUi.getState().resetNav("");
       set({ info: null, tree: [], notes: {}, index: EMPTY_INDEX, saveStatus: "idle", error: null });
     },
 
@@ -319,6 +321,9 @@ export const useWorkspace = create<WorkspaceState>((set, get) => {
         }
         await ipc.remove(path);
         useBoard.getState().removePaths(path);
+        const gone = (p: string) => p === path || p.startsWith(path + "/");
+        if (useSettings.getState().settings.nav.pinned.some(gone)) useSettings.getState().update((s) => ({ ...s, nav: { pinned: s.nav.pinned.filter((p) => !gone(p)) } }));
+        useUi.getState().recent.filter(gone).forEach((p) => useUi.getState().forgetRecent(p));
         const notes = { ...get().notes };
         for (const p of Object.keys(notes)) if (p === path || p.startsWith(path + "/")) delete notes[p];
         set({ notes });
@@ -434,6 +439,9 @@ export const useWorkspace = create<WorkspaceState>((set, get) => {
 
   function afterMove(from: string, to: string) {
     useBoard.getState().remapPaths(from, to);
+    const remap = (p: string) => (p === from ? to : p.startsWith(from + "/") ? to + p.slice(from.length) : p);
+    if (useSettings.getState().settings.nav.pinned.some((p) => remap(p) !== p)) useSettings.getState().update((s) => ({ ...s, nav: { pinned: s.nav.pinned.map(remap) } }));
+    useUi.getState().remapRecent(remap);
     const notes: Record<string, NoteState> = {};
     for (const [p, n] of Object.entries(get().notes)) {
       if (p === from) notes[to] = n;

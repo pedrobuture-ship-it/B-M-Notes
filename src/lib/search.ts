@@ -1,4 +1,5 @@
-import type { NoteIndex } from "./noteIndex";
+import type { NoteIndex, NoteMeta } from "./noteIndex";
+import { propText } from "./frontmatter";
 
 export interface SearchResult {
   path: string;
@@ -11,6 +12,31 @@ export interface SearchResult {
 
 function tokenize(q: string): string[] {
   return q.toLowerCase().split(/\s+/).filter(Boolean);
+}
+
+export interface QueryFilter {
+  key: string;
+  value: string;
+}
+
+/** `key:value` words become filters (tag:, path:, title:, or any frontmatter property); the rest is free text. */
+export function parseQuery(q: string): { text: string; filters: QueryFilter[] } {
+  const filters: QueryFilter[] = [];
+  const rest: string[] = [];
+  for (const w of q.trim().split(/\s+/).filter(Boolean)) {
+    const m = /^([A-Za-z][\w-]*):(.+)$/.exec(w);
+    if (m && !/^https?$/i.test(m[1]!)) filters.push({ key: m[1]!.toLowerCase(), value: m[2]!.toLowerCase().replace(/^["']|["']$/g, "") });
+    else rest.push(w);
+  }
+  return { text: rest.join(" "), filters };
+}
+
+function matchesFilter(m: NoteMeta, f: QueryFilter): boolean {
+  if (f.key === "tag") return m.tags.some((t) => t === f.value.replace(/^#/, "") || t.startsWith(f.value.replace(/^#/, "") + "/"));
+  if (f.key === "path" || f.key === "in") return m.path.toLowerCase().includes(f.value);
+  if (f.key === "title") return m.title.toLowerCase().includes(f.value);
+  const v = m.props[f.key];
+  return v !== undefined && propText(v).toLowerCase().includes(f.value);
 }
 
 function makeSnippet(content: string, lower: string, tokens: string[]): { snippet: string; marks: [number, number][] } {
@@ -43,11 +69,13 @@ export function searchNotes(
   query: string,
   limit = 50,
 ): SearchResult[] {
-  const tokens = tokenize(query.replace(/^#/, ""));
-  if (tokens.length === 0) return [];
-  const tagQuery = query.trim().startsWith("#");
+  const parsed = parseQuery(query);
+  const tokens = tokenize(parsed.text.replace(/^#/, ""));
+  if (tokens.length === 0 && parsed.filters.length === 0) return [];
+  const tagQuery = parsed.text.trim().startsWith("#");
   const results: SearchResult[] = [];
   for (const m of index.meta.values()) {
+    if (!parsed.filters.every((f) => matchesFilter(m, f))) continue;
     const name = m.name.toLowerCase();
     const title = m.title.toLowerCase();
     let score = 0;
@@ -68,7 +96,7 @@ export function searchNotes(
       score += s;
     }
     if (!ok) continue;
-    results.push({ path: m.path, title: m.title, score, snippet: "", marks: [] });
+    results.push({ path: m.path, title: m.title, score: score + parsed.filters.length, snippet: "", marks: [] });
   }
   results.sort((a, b) => b.score - a.score || a.title.localeCompare(b.title));
   const top = results.slice(0, limit);

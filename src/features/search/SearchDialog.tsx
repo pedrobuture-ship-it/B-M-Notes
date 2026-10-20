@@ -1,10 +1,12 @@
 import { Fragment, useEffect, useMemo, useRef, useState } from "react";
-import { FileText, Search } from "lucide-react";
+import { Bookmark, FileText, Search } from "lucide-react";
 import { Dialog } from "@/components/Dialogs";
 import { EmptySearch } from "@/components/doodles";
 import { useWorkspace } from "@/stores/workspace";
 import { useUi } from "@/stores/ui";
 import { searchNotes, type SearchResult } from "@/lib/search";
+import { saveSearch } from "@/lib/actions";
+import { useSettings } from "@/stores/settings";
 
 function Marked({ text, marks }: { text: string; marks: [number, number][] }) {
   const parts: React.ReactNode[] = [];
@@ -21,8 +23,11 @@ function Marked({ text, marks }: { text: string; marks: [number, number][] }) {
 export function SearchDialog() {
   const setDialog = useUi((s) => s.setDialog);
   const openNote = useUi((s) => s.openNote);
-  const [input, setInput] = useState("");
-  const [query, setQuery] = useState("");
+  const [input, setInput] = useState(() => useUi.getState().searchPrefill ?? "");
+  const [query, setQuery] = useState(input);
+  // The prefill (from a saved search) is consumed once.
+  useEffect(() => useUi.setState({ searchPrefill: null }), []);
+  const saved = useSettings((s) => s.settings.search.saved);
   const [sel, setSel] = useState(0);
   const listRef = useRef<HTMLDivElement>(null);
 
@@ -53,7 +58,7 @@ export function SearchDialog() {
         <input
           className="field"
           autoFocus
-          placeholder="Search by name, title, tag (#tag) or content…"
+          placeholder="Search name, title, #tag, content — or tag:x path:y status:done"
           value={input}
           onChange={(e) => setInput(e.target.value)}
           aria-label="Search notes"
@@ -67,9 +72,23 @@ export function SearchDialog() {
           }}
         />
       </div>
+      {input.trim() && (
+        <div className="px-4 pb-1 flex justify-end">
+          <button className="btn btn-ghost" onClick={() => void saveSearch(input)}><Bookmark size={14} /> Save this search</button>
+        </div>
+      )}
       <div className="palette-list" id="search-results" role="listbox" ref={listRef} style={{ minHeight: 120 }}>
         {query.trim() === "" ? (
-          <p className="px-3 py-6 m-0 text-center" style={{ color: "var(--ink-faint)" }}>Type to search every note in this workspace.</p>
+          <div className="px-3 py-4">
+            <p className="m-0 text-center" style={{ color: "var(--ink-faint)" }}>Type to search every note. Filters: <span className="kbd">tag:idea</span> <span className="kbd">path:docs</span> <span className="kbd">status:done</span></p>
+            {saved.map((s) => (
+              <button key={s.id} className="palette-item" onClick={() => { setInput(s.query); setQuery(s.query); }}>
+                <Bookmark size={16} className="shrink-0" />
+                <span className="flex-1">{s.name}</span>
+                <span className="text-xs" style={{ color: "var(--ink-faint)" }}>{s.query}</span>
+              </button>
+            ))}
+          </div>
         ) : results.length === 0 ? (
           <div className="empty"><EmptySearch /><p className="hand">No notes found.</p></div>
         ) : (

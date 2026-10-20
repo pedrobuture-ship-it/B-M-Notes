@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { ArrowLeft, Link2, Check, CircleAlert, Loader2 } from "lucide-react";
+import { ArrowLeft, Link2, Check, CircleAlert, Loader2, Pin, PinOff } from "lucide-react";
+import { togglePin } from "@/lib/actions";
 import { useWorkspace } from "@/stores/workspace";
 import { useSettings } from "@/stores/settings";
 import { useUi, type NoteMode } from "@/stores/ui";
@@ -35,6 +36,7 @@ export function NotePane({ path }: { path: string }) {
   const openNote = useUi((s) => s.openNote);
   const setView = useUi((s) => s.setView);
 
+  const pinned = useSettings((s) => s.settings.nav.pinned.includes(path));
   const pending = useUi((s) => s.pendingHeading);
   const [jump, setJump] = useState<{ line: number; nonce: number } | null>(null);
   const previewRef = useRef<HTMLElement>(null);
@@ -74,6 +76,7 @@ export function NotePane({ path }: { path: string }) {
         <span className="handwritten-label" style={{ fontSize: "1.6rem" }}>{basename(path)}</span>
         <div className="flex-1" />
         <SaveIndicator />
+        <button className="btn btn-ghost btn-icon" onClick={() => togglePin(path)} aria-label={pinned ? "Unpin note" : "Pin note"} data-tip={pinned ? "Unpin" : "Pin to top of the sidebar"}>{pinned ? <PinOff size={16} /> : <Pin size={16} />}</button>
         <div className="segmented" role="group" aria-label="View mode">
           {modes.map((m) => (
             <button key={m.id} aria-pressed={mode === m.id} onClick={() => setMode(m.id)}>{m.label}</button>

@@ -33,6 +33,7 @@ vi.mock("@/lib/ipc", () => ({
 import { useWorkspace } from "./workspace";
 import { useBoard } from "./board";
 import { useUi } from "./ui";
+import { useSettings } from "./settings";
 
 beforeEach(async () => {
   vi.useRealTimers();
@@ -165,5 +166,34 @@ describe("multiple murals", () => {
     expect(JSON.parse(meta.get("boards.json") ?? "{}").boards).toEqual([{ id: "study-plan", name: "Study Plan" }]);
     await B.getState().deleteBoard("study-plan", paths());
     expect(B.getState().boards.map((b) => b.id)).toEqual(["main"]);
+  });
+});
+
+describe("navigation", () => {
+  it("goes back and forward through opened notes and tracks recents", async () => {
+    await useWorkspace.getState().openWorkspace("/w");
+    const ui = useUi.getState;
+    ui().openNote("a.md");
+    ui().openNote("b.md");
+    ui().setView("board");
+    expect(ui().recent.slice(0, 2)).toEqual(["b.md", "a.md"]);
+    ui().goBack();
+    expect([ui().view, ui().activeNote]).toEqual(["note", "b.md"]);
+    ui().goBack();
+    expect([ui().view, ui().activeNote]).toEqual(["note", "a.md"]);
+    ui().goForward();
+    expect(ui().activeNote).toBe("b.md");
+    // Opening something new drops the forward entries.
+    ui().goBack();
+    ui().openNote("b.md");
+    expect(ui().histIdx).toBe(ui().history.length - 1);
+  });
+
+  it("keeps pinned notes in step with renames", async () => {
+    await useWorkspace.getState().openWorkspace("/w");
+    useSettings.getState().update((s) => ({ ...s, nav: { pinned: ["b.md"] } }));
+    vi.spyOn(useUi.getState(), "choose").mockResolvedValue("skip");
+    await useWorkspace.getState().renameEntry("b.md", "z.md");
+    expect(useSettings.getState().settings.nav.pinned).toEqual(["z.md"]);
   });
 });

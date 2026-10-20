@@ -59,12 +59,23 @@ export interface BoardData {
   labels: Record<string, string>;
 }
 
+export interface SavedSearch {
+  id: string;
+  name: string;
+  query: string;
+}
+
 export interface Settings {
   appearance: { theme: "dark" | "light"; density: "cozy" | "compact"; fontSize: number };
   editor: { lineNumbers: boolean; wordWrap: boolean; fontSize: number; autosaveDelay: number };
   files: { assetsFolder: string; ignoredFolders: string[]; dailyFolder: string; trashRetentionDays: number };
   board: { grid: boolean; snap: boolean; showConnections: boolean };
   sync: { auto: boolean };
+  search: { saved: SavedSearch[] };
+  nav: { pinned: string[] };
+  /** Action id -> key combo ("Ctrl+K"). Missing ids use the default. */
+  shortcuts: Record<string, string>;
+  backup: { folder: string; auto: boolean; keep: number };
 }
 
 export type SaveStatus = "idle" | "saving" | "saved" | "error";

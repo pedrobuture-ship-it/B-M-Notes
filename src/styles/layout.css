@@ -125,3 +125,8 @@
 .props-bar { display: flex; flex-wrap: wrap; gap: 6px; padding: 6px 16px; border-bottom: 2px dashed var(--line-soft); }
 .md-prose .embed { border-left: 4px solid var(--amber); background: rgb(217 164 65 / 0.08); border-radius: 3px 8px 3px 8px; padding: 4px 14px; margin: 10px 0; }
 .md-prose .embed > p:first-child { font-size: 0.85em; opacity: 0.85; margin: 2px 0 4px; }
+.nav-sections { padding: 0 4px 6px; border-bottom: 2px dashed var(--line-soft); margin-bottom: 4px; max-height: 40%; overflow-y: auto; flex: none; }
+.nav-heading { font-family: var(--font-hand); font-size: 1.05rem; color: var(--ink-faint); padding: 4px 8px 0; }
+.props-table { width: 100%; border-collapse: collapse; }
+.props-table th, .props-table td { text-align: left; padding: 4px 10px 4px 0; border-bottom: 1px dashed var(--line-soft); vertical-align: top; }
+.props-table th { font-family: var(--font-hand); font-size: 1.1rem; color: var(--ink-dim); position: sticky; top: 0; background: var(--surface); }

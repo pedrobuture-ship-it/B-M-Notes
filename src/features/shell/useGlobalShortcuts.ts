@@ -15,6 +15,12 @@ export function useGlobalShortcuts(enabled: boolean) {
         if (ui.editingCard) ui.setEditingCard(null);
         return;
       }
+      if (e.altKey && !mod && (e.key === "ArrowLeft" || e.key === "ArrowRight") && !(e.target as HTMLElement | null)?.closest("input, textarea, .cm-editor")) {
+        e.preventDefault();
+        if (e.key === "ArrowLeft") ui.goBack();
+        else ui.goForward();
+        return;
+      }
       if (!mod) return;
       const key = e.key.toLowerCase();
       const blockedByModal = ui.confirmReq || ui.promptReq;

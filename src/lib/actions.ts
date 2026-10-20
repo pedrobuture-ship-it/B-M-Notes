@@ -134,3 +134,27 @@ export async function newFrameTitle(): Promise<string | null> {
 export function settingsSnapshot() {
   return useSettings.getState().settings;
 }
+
+export function isPinned(path: string): boolean {
+  return useSettings.getState().settings.nav.pinned.includes(path);
+}
+
+export function togglePin(path: string): void {
+  useSettings.getState().update((s) => ({
+    ...s,
+    nav: { pinned: s.nav.pinned.includes(path) ? s.nav.pinned.filter((p) => p !== path) : [path, ...s.nav.pinned] },
+  }));
+}
+
+/** Saves a search under a name (asks for it) so it can be reopened from the sidebar and the palette. */
+export async function saveSearch(query: string): Promise<void> {
+  const q = query.trim();
+  if (!q) return;
+  const name = await useUi.getState().prompt({ title: "Save search", label: "Name", initial: q.slice(0, 40), confirmLabel: "Save" });
+  if (!name) return;
+  useSettings.getState().update((s) => ({ ...s, search: { saved: [...s.search.saved, { id: `s-${Date.now().toString(36)}`, name, query: q }].slice(-50) } }));
+}
+
+export function deleteSavedSearch(id: string): void {
+  useSettings.getState().update((s) => ({ ...s, search: { saved: s.search.saved.filter((x) => x.id !== id) } }));
+}

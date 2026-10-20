@@ -1,12 +1,15 @@
 import { basename, stripExt } from "./paths";
 import { extractTags, extractTitle, extractWikiLinks } from "./markdownText";
 import { createResolver, type LinkResolver } from "./wikiResolve";
+import { splitFrontmatter, type PropValue } from "./frontmatter";
 
 export interface NoteMeta {
   path: string;
   name: string;
   title: string;
   tags: string[];
+  /** Frontmatter properties, keys lowercased. */
+  props: Record<string, PropValue>;
   /** Raw wiki-link targets as written. */
   rawLinks: string[];
   /** Resolved outgoing links (note paths). */
@@ -29,6 +32,7 @@ export function parseNote(path: string, content: string): Omit<NoteMeta, "links"
     name,
     title: extractTitle(content, name),
     tags: extractTags(content),
+    props: Object.fromEntries(Object.entries(splitFrontmatter(content).data).map(([k, v]) => [k.toLowerCase(), v])),
     rawLinks: extractWikiLinks(content).map((l) => l.target),
     lower: content.toLowerCase(),
   };

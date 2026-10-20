@@ -1,4 +1,4 @@
-import { Cloud, CloudAlert, Command, FolderOpen, Moon, RefreshCw, Search, Settings, Sun } from "lucide-react";
+import { ChevronLeft, ChevronRight, Cloud, CloudAlert, Command, FolderOpen, Moon, RefreshCw, Search, Settings, Sun } from "lucide-react";
 import { LogoMark } from "@/components/doodles";
 import { useUi } from "@/stores/ui";
 import { useSettings } from "@/stores/settings";
@@ -10,6 +10,8 @@ export function Header() {
   const toggleSidebar = useUi((s) => s.toggleSidebar);
   const theme = useSettings((s) => s.settings.appearance.theme);
   const update = useSettings((s) => s.update);
+  const canBack = useUi((s) => s.histIdx > 0);
+  const canForward = useUi((s) => s.histIdx < s.history.length - 1);
   const sync = useSync((s) => s.info);
   const syncing = useSync((s) => s.busy);
   const syncError = useSync((s) => s.error);
@@ -21,6 +23,8 @@ export function Header() {
         <LogoMark />
         <span>b&amp;m <b>notes</b></span>
       </button>
+      <button className="btn btn-ghost btn-icon" disabled={!canBack} onClick={() => useUi.getState().goBack()} aria-label="Back" data-tip="Back (Alt+←)"><ChevronLeft size={17} /></button>
+      <button className="btn btn-ghost btn-icon" disabled={!canForward} onClick={() => useUi.getState().goForward()} aria-label="Forward" data-tip="Forward (Alt+→)"><ChevronRight size={17} /></button>
       <button className="search-trigger" onClick={() => setDialog("search")} aria-label="Search notes">
         <Search size={16} />
         <span className="flex-1">Search notes…</span>

@@ -284,3 +284,21 @@ describe("embeds and heading links", () => {
     expect(renderMarkdown("![[b]]", { notePath: "x.md" })).toContain("↪ b");
   });
 });
+
+describe("search filters", () => {
+  const idx = buildIndex([
+    ["a.md", "---\nstatus: done\nowner: Ana\n---\n# Alpha\nhello #work"],
+    ["b.md", "---\nstatus: draft\n---\n# Beta\nhello"],
+    ["docs/c.md", "# Gamma\nhello #work"],
+  ]);
+  const find = (q: string) => searchNotes(idx, () => "", q).map((r) => r.path).sort();
+  it("filters by property, tag, path and title, with or without text", () => {
+    expect(find("status:done")).toEqual(["a.md"]);
+    expect(find("status:d")).toEqual(["a.md", "b.md"]);
+    expect(find("hello tag:work")).toEqual(["a.md", "docs/c.md"]);
+    expect(find("path:docs")).toEqual(["docs/c.md"]);
+    expect(find("title:beta owner:ana")).toEqual([]);
+    expect(find("owner:ana hello")).toEqual(["a.md"]);
+    expect(find("https://x")).toEqual([]);
+  });
+});

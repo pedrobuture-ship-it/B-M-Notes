@@ -1,5 +1,6 @@
 import { ipc } from "@/lib/ipc";
-import { newNote, revealInFolder } from "@/lib/actions";
+import { newNote, revealInFolder, togglePin } from "@/lib/actions";
+import { useSettings } from "@/stores/settings";
 import { boardCommand } from "@/features/board/boardBus";
 import { useUi } from "@/stores/ui";
 import { useWorkspace } from "@/stores/workspace";
@@ -57,6 +58,11 @@ export function getCommands(): Command[] {
     { id: "go-graph", label: "Explore graph", run: () => ui().setSidebarTab("explore") },
     { id: "new-from-template", label: "New note from template…", run: () => ui().setDialog("templates") },
     { id: "tasks", label: "Open tasks", run: () => ui().setDialog("tasks") },
+    { id: "properties", label: "Open properties table", run: () => ui().setDialog("properties") },
+    { id: "pin", label: "Pin / unpin this note", run: () => { if (ui().view === "note" && ui().activeNote) togglePin(ui().activeNote!); } },
+    { id: "back", label: "Go back", hint: "Alt ←", run: () => ui().goBack() },
+    { id: "forward", label: "Go forward", hint: "Alt →", run: () => ui().goForward() },
+    ...useSettings.getState().settings.search.saved.map((s) => ({ id: `saved-${s.id}`, label: `Search: ${s.name}`, run: () => ui().openSearch(s.query) })),
     { id: "trash", label: "Open trash", run: () => ui().setDialog("trash") },
     { id: "settings", label: "Settings", hint: "Ctrl ,", run: () => ui().setDialog("settings") },
     { id: "shortcuts", label: "Keyboard shortcuts", hint: "Ctrl /", run: () => ui().setDialog("shortcuts") },

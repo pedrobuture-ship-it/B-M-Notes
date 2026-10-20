@@ -14,6 +14,10 @@ export const DEFAULT_SETTINGS: Settings = {
   files: { assetsFolder: "assets", ignoredFolders: [], dailyFolder: "daily", trashRetentionDays: 30 },
   board: { grid: true, snap: false, showConnections: true },
   sync: { auto: true },
+  search: { saved: [] },
+  nav: { pinned: [] },
+  shortcuts: {},
+  backup: { folder: "", auto: false, keep: 5 },
 };
 
 const num = (v: unknown, d: number): number => (typeof v === "number" && Number.isFinite(v) ? v : d);
@@ -93,6 +97,20 @@ export function normalizeSettings(raw: unknown): Settings {
       showConnections: bool(b.showConnections, d.board.showConnections),
     },
     sync: { auto: bool(obj(r.sync).auto, d.sync.auto) },
+    search: {
+      saved: (Array.isArray(obj(r.search).saved) ? (obj(r.search).saved as unknown[]) : [])
+        .map((x) => obj(x))
+        .filter((x) => typeof x.id === "string" && typeof x.name === "string" && typeof x.query === "string")
+        .map((x) => ({ id: x.id as string, name: (x.name as string).slice(0, 60), query: (x.query as string).slice(0, 300) }))
+        .slice(0, 50),
+    },
+    nav: { pinned: (Array.isArray(obj(r.nav).pinned) ? (obj(r.nav).pinned as unknown[]) : []).filter((x): x is string => typeof x === "string").slice(0, 100) },
+    shortcuts: Object.fromEntries(Object.entries(obj(r.shortcuts)).filter(([k, v]) => typeof v === "string" && k.length < 40 && (v as string).length < 40)) as Record<string, string>,
+    backup: {
+      folder: str(obj(r.backup).folder, d.backup.folder).slice(0, 500),
+      auto: bool(obj(r.backup).auto, d.backup.auto),
+      keep: Math.min(100, Math.max(1, Math.round(num(obj(r.backup).keep, d.backup.keep)))),
+    },
   };
 }
 

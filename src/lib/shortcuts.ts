@@ -13,6 +13,7 @@ export const SHORTCUTS: ShortcutDef[] = [
   { keys: "Ctrl + B", label: "Toggle sidebar", group: "General" },
   { keys: "Ctrl + ,", label: "Settings", group: "General" },
   { keys: "Ctrl + /", label: "Keyboard shortcuts", group: "General" },
+  { keys: "Alt + ← / →", label: "Back / forward", group: "General" },
   { keys: "Esc", label: "Close dialog / leave card editing", group: "General" },
   { keys: "Double-click canvas", label: "Create a note at that spot", group: "Mural" },
   { keys: "Double-click card", label: "Edit the note in place", group: "Mural" },
