@@ -1,4 +1,4 @@
-use crate::filesystem::{hash_content, ops, paths, AppState};
+use crate::filesystem::{hash_content, ops, paths, trash, AppState};
 use crate::watcher;
 use base64::Engine;
 use serde::Serialize;
@@ -88,7 +88,29 @@ pub fn move_entry(state: State<'_, AppState>, path: String, new_parent: String) 
 
 #[tauri::command]
 pub fn delete_entry(state: State<'_, AppState>, path: String) -> Res<()> {
-    ops::delete_entry(&state.root()?, &path)
+    trash::move_to_trash(&state.root()?, &path).map(|_| ())
+}
+
+#[tauri::command]
+pub fn list_trash(state: State<'_, AppState>, retention_days: u32) -> Res<Vec<trash::TrashItem>> {
+    let root = state.root()?;
+    trash::purge_expired(&root, retention_days)?;
+    trash::list(&root)
+}
+
+#[tauri::command]
+pub fn restore_trash(state: State<'_, AppState>, id: String) -> Res<String> {
+    trash::restore(&state.root()?, &id)
+}
+
+#[tauri::command]
+pub fn delete_trash(state: State<'_, AppState>, id: String) -> Res<()> {
+    trash::delete(&state.root()?, &id)
+}
+
+#[tauri::command]
+pub fn empty_trash(state: State<'_, AppState>) -> Res<()> {
+    trash::empty(&state.root()?)
 }
 
 #[tauri::command]

@@ -47,6 +47,23 @@ export function removeWikiLinks(content: string, matches: (target: string) => bo
   return out;
 }
 
+/** Rewrites wiki-link targets. `fn` gets the trimmed target and returns its replacement, or null to keep it. */
+export function rewriteWikiTargets(content: string, fn: (target: string) => string | null): { content: string; count: number } {
+  const masked = maskCode(content);
+  let out = content;
+  let count = 0;
+  for (const m of [...masked.matchAll(WIKI)].reverse()) {
+    const raw = m[1] ?? "";
+    const trimmed = raw.trim();
+    const next = trimmed ? fn(trimmed) : null;
+    if (next === null || next === trimmed) continue;
+    const start = m.index + 2 + (raw.length - raw.trimStart().length);
+    out = out.slice(0, start) + next + out.slice(start + trimmed.length);
+    count++;
+  }
+  return { content: out, count };
+}
+
 export function extractTags(content: string): string[] {
   const masked = maskCode(content).replace(/^---\n[\s\S]*?\n---\n/, (m) => m.replace(/[^\n]/g, " "));
   const tags = new Set<string>();

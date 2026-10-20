@@ -2,7 +2,8 @@ import { create } from "zustand";
 import { buildIndex, updateIndex, type NoteIndex } from "@/lib/noteIndex";
 import { ipc, type FsChange } from "@/lib/ipc";
 import { dateStamp, dailyTemplate } from "@/lib/daily";
-import { joinPath } from "@/lib/paths";
+import { basename, dirname, joinPath } from "@/lib/paths";
+import { planLinkUpdates, type LinkPlan } from "@/lib/renameLinks";
 import type { NoteFile, SaveStatus, TreeNode, WorkspaceInfo } from "@/types";
 import { useBoard } from "./board";
 import { useSettings } from "./settings";
@@ -274,8 +275,15 @@ export const useWorkspace = create<WorkspaceState>((set, get) => {
     renameEntry: async (path, newName) => {
       try {
         await get().flushAll();
+        const isNote = !!get().notes[path];
+        const name = isNote && !/\.(md|markdown)$/i.test(newName) ? `${newName}.md` : newName;
+        const dir = dirname(path);
+        const target = joinPath(dir, name);
+        const links = await askLinkUpdate(path, target);
+        if (links === "cancel") return null;
         const next = await ipc.rename(path, newName);
         if (next !== path) afterMove(path, next);
+        if (links && next === target) applyLinkUpdate(links);
         await queueSync();
         return next;
       } catch (e) {
@@ -287,8 +295,12 @@ export const useWorkspace = create<WorkspaceState>((set, get) => {
     moveEntry: async (path, newParent) => {
       try {
         await get().flushAll();
+        const target = joinPath(newParent, basename(path));
+        const links = await askLinkUpdate(path, target);
+        if (links === "cancel") return null;
         const next = await ipc.move(path, newParent);
         if (next !== path) afterMove(path, next);
+        if (links && next === target) applyLinkUpdate(links);
         await queueSync();
         return next;
       } catch (e) {
@@ -376,6 +388,49 @@ export const useWorkspace = create<WorkspaceState>((set, get) => {
 
     syncWithDisk: queueSync,
   };
+
+  /** [oldPath, newPath] for every note touched by renaming/moving `from` to `to`. */
+  function notePairs(from: string, to: string): [string, string][] {
+    const out: [string, string][] = [];
+    for (const p of Object.keys(get().notes)) {
+      if (p === from) out.push([p, to]);
+      else if (p.startsWith(from + "/")) out.push([p, to + p.slice(from.length)]);
+    }
+    return out;
+  }
+
+  /** Offers to rewrite [[links]] that would break. Returns the plan to apply, null for "rename only", or "cancel". */
+  async function askLinkUpdate(from: string, to: string): Promise<LinkPlan | null | "cancel"> {
+    if (from === to) return null;
+    const pairs = notePairs(from, to);
+    if (pairs.length === 0) return null;
+    const plan = planLinkUpdates(Object.fromEntries(Object.entries(get().notes).map(([p, n]) => [p, n.content])), pairs);
+    if (plan.total === 0) return null;
+    const noun = (n: number, w: string) => `${n} ${w}${n === 1 ? "" : "s"}`;
+    const choice = await useUi.getState().choose({
+      title: "Update links?",
+      message: `${basename(from)} → ${basename(to)}\nFound ${noun(plan.total, "link")} in ${noun(plan.files.length, "note")}:`,
+      details: plan.files.map((f) => `${f.path} (${f.count})`),
+      options: [
+        { label: "Update references", value: "update", kind: "primary" },
+        { label: "Rename only", value: "skip" },
+      ],
+    });
+    if (choice === "update") return plan;
+    return choice === "skip" ? null : "cancel";
+  }
+
+  function applyLinkUpdate(plan: LinkPlan) {
+    let changed = 0;
+    for (const [p, n] of Object.entries(get().notes)) {
+      const next = plan.rewrite(n.content);
+      if (next !== n.content) {
+        get().setContent(p, next);
+        changed++;
+      }
+    }
+    if (changed) useUi.getState().toast(`Updated ${plan.total} ${plan.total === 1 ? "link" : "links"} in ${changed} ${changed === 1 ? "note" : "notes"}`, "success");
+  }
 
   function afterMove(from: string, to: string) {
     useBoard.getState().remapPaths(from, to);

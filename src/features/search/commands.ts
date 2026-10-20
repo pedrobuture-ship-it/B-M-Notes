@@ -55,6 +55,7 @@ export function getCommands(): Command[] {
     { id: "toggle-editor", label: "Toggle editor", run: () => { if (ui().view === "note") ui().setNoteMode(ui().noteMode === "preview" ? "split" : "preview"); } },
     { id: "go-board", label: "Go to mural", run: () => ui().setView("board") },
     { id: "go-graph", label: "Explore graph", run: () => ui().setSidebarTab("explore") },
+    { id: "trash", label: "Open trash", run: () => ui().setDialog("trash") },
     { id: "settings", label: "Settings", hint: "Ctrl ,", run: () => ui().setDialog("settings") },
     { id: "shortcuts", label: "Keyboard shortcuts", hint: "Ctrl /", run: () => ui().setDialog("shortcuts") },
     { id: "about", label: "About b&m notes", run: () => ui().setDialog("about") },

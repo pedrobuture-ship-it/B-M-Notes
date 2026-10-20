@@ -10,7 +10,7 @@ use std::process::Command;
 
 type Res<T> = Result<T, String>;
 
-const IGNORE_LINES: [&str; 4] = [".mural/settings.json", ".mural/sync.json", ".mural/backups/", ".mural/*.corrupt.json"];
+const IGNORE_LINES: [&str; 5] = [".mural/settings.json", ".mural/sync.json", ".mural/backups/", ".mural/trash/", ".mural/*.corrupt.json"];
 const LARGE_FILE: u64 = 10 * 1024 * 1024;
 const BOARD: &str = ".mural/board.json";
 

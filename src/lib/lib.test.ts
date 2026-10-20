@@ -7,6 +7,7 @@ import { searchNotes, fuzzyScore } from "./search";
 import { resolveRelative, isSafeRelativePath, basename, dirname } from "./paths";
 import { normalizeBoard, autoLayout } from "./board";
 import { renderMarkdown } from "./markdown";
+import { planLinkUpdates } from "./renameLinks";
 
 describe("wiki links", () => {
   it("extracts targets, aliases and headings", () => {
@@ -158,5 +159,36 @@ describe("removeWikiLinks", () => {
   });
   it("removes aliased links and leaves code alone", () => {
     expect(removeWikiLinks("x\n[[b|Bee]]\n`[[b]]`", is("b"))).toBe("x\n`[[b]]`");
+  });
+});
+
+describe("planLinkUpdates", () => {
+  const notes = {
+    "architecture.md": "# Architecture\n",
+    "Ideas.md": "See [[architecture]] and [[Architecture|the design]] and [[architecture#Layers]].\n`[[architecture]]`\n",
+    "Backend.md": "Uses [[ architecture ]] and [[docs/other]].\n",
+    "docs/other.md": "x\n",
+  };
+
+  it("rewrites plain, aliased and heading links, keeping the rest", () => {
+    const plan = planLinkUpdates(notes, [["architecture.md", "system-design.md"]]);
+    expect(plan.total).toBe(4);
+    expect(plan.files).toEqual([{ path: "Ideas.md", count: 3 }, { path: "Backend.md", count: 1 }]);
+    expect(plan.rewrite(notes["Ideas.md"])).toBe("See [[system-design]] and [[system-design|the design]] and [[system-design#Layers]].\n`[[architecture]]`\n");
+    expect(plan.rewrite(notes["Backend.md"])).toBe("Uses [[ system-design ]] and [[docs/other]].\n");
+  });
+
+  it("keeps path-qualified links qualified", () => {
+    const plan = planLinkUpdates(notes, [["docs/other.md", "docs/renamed.md"]]);
+    expect(plan.rewrite(notes["Backend.md"])).toBe("Uses [[ architecture ]] and [[docs/renamed]].\n");
+  });
+
+  it("uses the full path when the new plain name would be ambiguous", () => {
+    const plan = planLinkUpdates({ "a/x.md": "", "b.md": "", "n.md": "[[b]]" }, [["b.md", "z/x.md"]]);
+    expect(plan.rewrite("[[b]]")).toBe("[[z/x]]");
+  });
+
+  it("does nothing when the links stay valid", () => {
+    expect(planLinkUpdates({ "a.md": "[[b]]", "b.md": "" }, [["b.md", "sub/b.md"]]).total).toBe(0);
   });
 });

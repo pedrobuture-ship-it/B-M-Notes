@@ -18,6 +18,9 @@ No account, no cloud, no lock-in — everything is plain Markdown on your disk.
 - **Backlinks**, **tags** (`#idea`), **daily notes**, **interactive checkboxes** that edit the real file.
 - **Local search** across file names, titles, tags and content (Ctrl+P), plus a **command palette** (Ctrl+K).
 - **Graph view** of every note and link.
+- **Smart rename**: renaming or moving a note shows how many `[[links]]` in other notes would break and offers to update them.
+- **Trash**: deleting moves notes to `.mural/trash/`; restore them or empty the trash from the sidebar. Retention is configurable (default 30 days).
+- **Light and dark** themes, plus optional **GitHub sync** for sharing a folder.
 - Paste or drop images: they are copied to `assets/` and referenced as normal Markdown.
 
 | Note page | Graph | Card menu |
@@ -201,10 +204,8 @@ Press **Ctrl + /** in the app for the full list.
 
 ## Roadmap
 
-- Light theme
-- Update `[[links]]` in other notes when a note is renamed
 - Embeds (`![[note]]`) and heading links
-- Optional trash instead of permanent delete
+- Rewrite plain Markdown links `[text](note.md)` on rename
 - Signed releases and auto-update (opt-in)
 
 ## License

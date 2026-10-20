@@ -11,7 +11,7 @@ export function emptyBoard(): BoardData {
 export const DEFAULT_SETTINGS: Settings = {
   appearance: { theme: "dark", density: "cozy", fontSize: 15 },
   editor: { lineNumbers: false, wordWrap: true, fontSize: 15, autosaveDelay: 600 },
-  files: { assetsFolder: "assets", ignoredFolders: [], dailyFolder: "daily" },
+  files: { assetsFolder: "assets", ignoredFolders: [], dailyFolder: "daily", trashRetentionDays: 30 },
   board: { grid: true, snap: false, showConnections: true },
   sync: { auto: true },
 };
@@ -83,6 +83,7 @@ export function normalizeSettings(raw: unknown): Settings {
     },
     files: {
       assetsFolder: safeFolder(str(f.assetsFolder, d.files.assetsFolder), d.files.assetsFolder),
+      trashRetentionDays: Math.min(3650, Math.max(0, Math.round(num(f.trashRetentionDays, d.files.trashRetentionDays)))),
       ignoredFolders: Array.isArray(f.ignoredFolders) ? f.ignoredFolders.filter((x): x is string => typeof x === "string") : [],
       dailyFolder: safeFolder(str(f.dailyFolder, d.files.dailyFolder), d.files.dailyFolder),
     },

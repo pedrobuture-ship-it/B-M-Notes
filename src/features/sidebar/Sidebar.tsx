@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { ChevronRight, FileText, FilePlus, Folder, FolderOpen, FolderPlus, Hash, Network, StickyNote, X } from "lucide-react";
+import { ChevronRight, FileText, FilePlus, Folder, FolderOpen, FolderPlus, Hash, Network, StickyNote, Trash2, X } from "lucide-react";
 import { useWorkspace } from "@/stores/workspace";
 import { useUi, type SidebarTab } from "@/stores/ui";
 import { Menu, useContextMenu, type MenuEntry } from "@/components/Menu";
@@ -43,6 +43,7 @@ export function Sidebar() {
       <div className="sidebar-foot">
         <span>{count} {count === 1 ? "note" : "notes"}</span>
         <span className="flex-1" />
+        <button className="btn btn-ghost btn-icon" onClick={() => useUi.getState().setDialog("trash")} data-tip="Trash" aria-label="Trash"><Trash2 size={15} /></button>
         <button className="btn btn-ghost btn-icon" onClick={() => void ipc.reveal("").catch(() => {})} data-tip="Reveal workspace in filesystem" aria-label="Reveal workspace in filesystem"><FolderOpen size={15} /></button>
       </div>
     </aside>

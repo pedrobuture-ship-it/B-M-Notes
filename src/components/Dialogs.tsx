@@ -67,6 +67,32 @@ export function ConfirmDialog() {
   );
 }
 
+export function ChoiceDialog() {
+  const req = useUi((s) => s.choiceReq);
+  const resolve = useUi((s) => s.resolveChoice);
+  const firstRef = useRef<HTMLButtonElement>(null);
+  useEffect(() => {
+    if (req) firstRef.current?.focus();
+  }, [req]);
+  if (!req) return null;
+  return (
+    <Dialog title={req.title} onClose={() => resolve(null)} width={480} center>
+      <div className="px-5 pb-2 selectable" style={{ color: "var(--ink-dim)", whiteSpace: "pre-line" }}>{req.message}</div>
+      {req.details && (
+        <ul className="px-5 pb-2 overflow-auto selectable" style={{ maxHeight: 180, listStyle: "none", margin: 0 }}>
+          {req.details.map((d) => <li key={d} style={{ padding: "1px 0" }}>{d}</li>)}
+        </ul>
+      )}
+      <div className="flex justify-end gap-2 px-5 py-4 flex-wrap">
+        <button className="btn" onClick={() => resolve(null)}>Cancel</button>
+        {req.options.map((o, i) => (
+          <button key={o.value} ref={i === 0 ? firstRef : undefined} className={`btn ${o.kind === "primary" ? "btn-primary" : o.kind === "danger" ? "btn-danger" : ""}`} onClick={() => resolve(o.value)}>{o.label}</button>
+        ))}
+      </div>
+    </Dialog>
+  );
+}
+
 export function PromptDialog() {
   const req = useUi((s) => s.promptReq);
   const resolve = useUi((s) => s.resolvePrompt);

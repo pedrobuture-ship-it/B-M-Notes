@@ -41,6 +41,14 @@ export interface GithubRepo {
   url: string;
 }
 
+export interface TrashItem {
+  id: string;
+  name: string;
+  originalPath: string;
+  isDir: boolean;
+  deletedAt: number;
+}
+
 export interface MetaRead {
   content: string | null;
   backup: string | null;
@@ -74,6 +82,10 @@ export const ipc = {
   rename: (path: string, newName: string) => call<string>("rename_entry", { path, newName }),
   move: (path: string, newParent: string) => call<string>("move_entry", { path, newParent }),
   remove: (path: string) => call<void>("delete_entry", { path }),
+  listTrash: (retentionDays: number) => call<TrashItem[]>("list_trash", { retentionDays }),
+  restoreTrash: (id: string) => call<string>("restore_trash", { id }),
+  deleteTrash: (id: string) => call<void>("delete_trash", { id }),
+  emptyTrash: () => call<void>("empty_trash"),
   saveAsset: (assetsDir: string, fileName: string, dataBase64: string) =>
     call<string>("save_asset", { assetsDir, fileName, dataBase64 }),
   absolutePath: (path: string) => call<string>("absolute_path", { path }),

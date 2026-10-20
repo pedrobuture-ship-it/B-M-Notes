@@ -165,6 +165,9 @@ export function SettingsDialog() {
               <Row title="Assets folder" hint="Pasted and dropped images are copied here.">
                 <input className="field" style={{ width: 180 }} aria-label="Assets folder" defaultValue={settings.files.assetsFolder} onBlur={(e) => update((s) => ({ ...s, files: { ...s.files, assetsFolder: e.target.value } }))} />
               </Row>
+              <Row title="Trash retention" hint="Days before deleted notes are removed for good. 0 keeps them until you empty the trash.">
+                <NumberField label="Trash retention days" value={settings.files.trashRetentionDays} min={0} max={3650} onChange={(n) => update((s) => ({ ...s, files: { ...s.files, trashRetentionDays: n } }))} />
+              </Row>
               <Row title="Ignored folders" hint="Comma separated. node_modules, .git and .mural are always ignored.">
                 <input
                   className="field"

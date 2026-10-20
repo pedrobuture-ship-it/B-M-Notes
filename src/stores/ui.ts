@@ -3,7 +3,7 @@ import { create } from "zustand";
 export type SidebarTab = "notes" | "tags" | "files" | "explore";
 export type MainView = "board" | "graph" | "note";
 export type NoteMode = "edit" | "preview" | "split";
-export type DialogName = "palette" | "search" | "shortcuts" | "settings" | "about" | null;
+export type DialogName = "palette" | "search" | "shortcuts" | "settings" | "about" | "trash" | null;
 
 export interface Toast {
   id: number;
@@ -17,6 +17,21 @@ interface ConfirmReq {
   confirmLabel?: string;
   danger?: boolean;
   resolve: (ok: boolean) => void;
+}
+
+export interface ChoiceOption {
+  label: string;
+  value: string;
+  kind?: "primary" | "danger";
+}
+
+interface ChoiceReq {
+  title: string;
+  message: string;
+  /** Optional scrollable list under the message. */
+  details?: string[];
+  options: ChoiceOption[];
+  resolve: (value: string | null) => void;
 }
 
 interface PromptReq {
@@ -41,6 +56,7 @@ interface UiState {
   toasts: Toast[];
   confirmReq: ConfirmReq | null;
   promptReq: PromptReq | null;
+  choiceReq: ChoiceReq | null;
   setSidebarOpen: (v: boolean) => void;
   toggleSidebar: () => void;
   setSidebarTab: (t: SidebarTab) => void;
@@ -59,6 +75,8 @@ interface UiState {
   prompt: (req: Omit<PromptReq, "resolve">) => Promise<string | null>;
   resolveConfirm: (ok: boolean) => void;
   resolvePrompt: (v: string | null) => void;
+  choose: (req: Omit<ChoiceReq, "resolve">) => Promise<string | null>;
+  resolveChoice: (v: string | null) => void;
 }
 
 let toastId = 1;
@@ -77,6 +95,7 @@ export const useUi = create<UiState>((set, get) => ({
   toasts: [],
   confirmReq: null,
   promptReq: null,
+  choiceReq: null,
   setSidebarOpen: (sidebarOpen) => set({ sidebarOpen }),
   toggleSidebar: () => set((s) => ({ sidebarOpen: !s.sidebarOpen })),
   setSidebarTab: (sidebarTab) => set({ sidebarTab, sidebarOpen: true, ...(sidebarTab === "explore" ? { view: "graph" as const } : {}) }),
@@ -97,6 +116,11 @@ export const useUi = create<UiState>((set, get) => ({
   dismissToast: (id) => set((s) => ({ toasts: s.toasts.filter((t) => t.id !== id) })),
   confirm: (req) => new Promise((resolve) => set({ confirmReq: { ...req, resolve } })),
   prompt: (req) => new Promise((resolve) => set({ promptReq: { ...req, resolve } })),
+  choose: (req) => new Promise((resolve) => set({ choiceReq: { ...req, resolve } })),
+  resolveChoice: (v) => {
+    get().choiceReq?.resolve(v);
+    set({ choiceReq: null });
+  },
   resolveConfirm: (ok) => {
     get().confirmReq?.resolve(ok);
     set({ confirmReq: null });

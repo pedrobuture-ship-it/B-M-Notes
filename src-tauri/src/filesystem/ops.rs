@@ -195,19 +195,6 @@ pub fn move_entry(root: &Path, rel: &str, new_parent_rel: &str) -> Result<String
     to_rel(root, &target).ok_or_else(|| "Invalid path".into())
 }
 
-pub fn delete_entry(root: &Path, rel: &str) -> Result<(), String> {
-    if rel.trim_matches('/').is_empty() {
-        return Err("Refusing to delete the workspace root".into());
-    }
-    let abs = safe_join(root, rel)?;
-    let meta = abs.symlink_metadata().map_err(|e| e.to_string())?;
-    if meta.is_dir() {
-        fs::remove_dir_all(&abs).map_err(|e| e.to_string())
-    } else {
-        fs::remove_file(&abs).map_err(|e| e.to_string())
-    }
-}
-
 /// Saves a pasted/dropped image into the assets folder with a safe unique name.
 pub fn save_asset(root: &Path, assets_dir: &str, file_name: &str, bytes: &[u8]) -> Result<String, String> {
     let ext = Path::new(file_name)
@@ -343,7 +330,7 @@ mod tests {
         assert_eq!(read_note(&root, &rel).unwrap().content, "# oi");
         let renamed = rename(&root, &rel, "nova").unwrap();
         assert_eq!(renamed, "nova.md");
-        delete_entry(&root, &renamed).unwrap();
+        crate::filesystem::trash::move_to_trash(&root, &renamed).unwrap();
         assert!(read_note(&root, &renamed).is_err());
     }
 
@@ -351,8 +338,8 @@ mod tests {
     fn operations_cannot_escape_root() {
         let (_t, root) = setup();
         assert!(write_note(&root, "../evil.md", "x").is_err());
-        assert!(delete_entry(&root, "../x").is_err());
-        assert!(delete_entry(&root, "").is_err());
+        assert!(crate::filesystem::trash::move_to_trash(&root, "../x").is_err());
+        assert!(crate::filesystem::trash::move_to_trash(&root, "").is_err());
         assert!(rename(&root, "a.md", "../b.md").is_err());
     }
 

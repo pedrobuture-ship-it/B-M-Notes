@@ -1,5 +1,6 @@
 pub mod ops;
 pub mod paths;
+pub mod trash;
 
 use std::collections::HashMap;
 use std::path::PathBuf;

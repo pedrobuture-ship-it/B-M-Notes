@@ -92,9 +92,9 @@ export async function deleteEntry(path: string, isDir: boolean): Promise<boolean
   const ui = useUi.getState();
   const label = isDir ? `the folder "${basename(path)}" and everything inside it` : `"${basename(path)}"`;
   const ok = await ui.confirm({
-    title: isDir ? "Delete folder?" : "Delete note?",
-    message: `This permanently deletes ${label} from disk. This can't be undone.`,
-    confirmLabel: "Delete",
+    title: isDir ? "Move folder to trash?" : "Move note to trash?",
+    message: `${label} will be moved to the Trash. You can restore it from there.`,
+    confirmLabel: "Move to trash",
     danger: true,
   });
   if (!ok) return false;

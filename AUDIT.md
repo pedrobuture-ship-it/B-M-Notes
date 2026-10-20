@@ -71,9 +71,9 @@ images, live watcher updates verified by editing files from outside). Release bu
 
 ## 5. Known gaps / future improvements
 
-- Renaming a note does **not** rewrite `[[links]]` in other notes (Obsidian-style link refactoring).
-- Delete is permanent (after confirmation); an optional trash would be safer.
-- Light theme (planned; the setting is stubbed in the UI).
+- Renaming/moving a note offers to rewrite `[[links]]` in other notes (**done**); plain Markdown links `[text](note.md)` are not rewritten yet.
+- Delete now moves to `.mural/trash/` with restore and configurable retention (**done**).
+- Light theme (**done**).
 - Only the Linux bundle was built and run here; Windows/macOS configs are standard Tauri but untested.
 - Embeds (`![[note]]`), heading links and aliases in the graph are not supported.
 - Canvas keyboard accessibility is limited to what React Flow provides (focusable nodes); a full keyboard

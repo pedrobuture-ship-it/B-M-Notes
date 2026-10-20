@@ -11,13 +11,14 @@ import { SearchDialog } from "@/features/search/SearchDialog";
 import { CommandPalette } from "@/features/search/CommandPalette";
 import { SettingsDialog, ShortcutsDialog, AboutDialog } from "@/features/settings/Dialogs";
 import { useGlobalShortcuts } from "@/features/shell/useGlobalShortcuts";
-import { ConfirmDialog, PromptDialog, Toasts } from "@/components/Dialogs";
+import { ChoiceDialog, ConfirmDialog, PromptDialog, Toasts } from "@/components/Dialogs";
 import { useWorkspace, getLastWorkspace } from "@/stores/workspace";
 import { useSettings } from "@/stores/settings";
 import { useBoard } from "@/stores/board";
 import { useUi } from "@/stores/ui";
 import { basename } from "@/lib/paths";
 import { ipc } from "@/lib/ipc";
+import { TrashDialog } from "@/features/trash/TrashDialog";
 import { useAutoSync } from "@/features/shell/useAutoSync";
 
 function MainArea() {
@@ -108,7 +109,9 @@ export function App() {
       {dialog === "settings" && <SettingsDialog />}
       {dialog === "shortcuts" && <ShortcutsDialog />}
       {dialog === "about" && <AboutDialog />}
+      {info && dialog === "trash" && <TrashDialog />}
       <ConfirmDialog />
+      <ChoiceDialog />
       <PromptDialog />
       <Toasts />
     </ReactFlowProvider>
