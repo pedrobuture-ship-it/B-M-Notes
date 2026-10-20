@@ -11,6 +11,7 @@ import { SearchDialog } from "@/features/search/SearchDialog";
 import { CommandPalette } from "@/features/search/CommandPalette";
 import { SettingsDialog, ShortcutsDialog, AboutDialog } from "@/features/settings/Dialogs";
 import { useGlobalShortcuts } from "@/features/shell/useGlobalShortcuts";
+import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { ChoiceDialog, ConfirmDialog, PromptDialog, Toasts } from "@/components/Dialogs";
 import { useWorkspace, getLastWorkspace } from "@/stores/workspace";
 import { useSettings } from "@/stores/settings";
@@ -60,10 +61,12 @@ function MainArea() {
         <div className="pb-1.5 pr-1"><SaveIndicator /></div>
       </div>
       <div className="main-content">
-        {view === "board" && (boardReady ? <Board key={activeBoard} /> : <div className="empty h-full"><p className="hand">{tr("Laying out the wall…")}</p></div>)}
-        {view === "graph" && <GraphExplorer />}
-        {view === "timeline" && <Timeline />}
-        {view === "note" && active && <NotePane path={active} />}
+        <ErrorBoundary resetKey={`${view}:${active ?? ""}`} onBack={view === "board" ? undefined : () => setView("board")}>
+          {view === "board" && (boardReady ? <Board key={activeBoard} /> : <div className="empty h-full"><p className="hand">{tr("Laying out the wall…")}</p></div>)}
+          {view === "graph" && <GraphExplorer />}
+          {view === "timeline" && <Timeline />}
+          {view === "note" && active && <NotePane path={active} />}
+        </ErrorBoundary>
       </div>
     </div>
   );

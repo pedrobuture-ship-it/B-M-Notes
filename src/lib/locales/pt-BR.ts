@@ -169,6 +169,8 @@ export const PT_BR: Record<string, string> = {
   // Nota
   "Back to mural": "Voltar ao mural",
   "Back to the mural": "Voltar ao mural",
+  "Something broke while showing this.": "Algo quebrou ao mostrar isto.",
+  "Try again": "Tentar de novo",
   "This note is gone.": "Esta nota não existe mais.",
   "This file changed on disk while you have unsaved edits.": "Este arquivo mudou no disco enquanto você tem edições não salvas.",
   "Keep mine": "Manter a minha",

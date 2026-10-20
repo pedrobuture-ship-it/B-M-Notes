@@ -67,7 +67,9 @@ export function NotePane({ path }: { path: string }) {
   const setView = useUi((s) => s.setView);
 
   const tr = useTr();
-  const others = useSync((s) => s.presence.filter((p) => p.note === path));
+  // Select the stable array and filter outside: a selector returning a new array loops forever.
+  const presence = useSync((s) => s.presence);
+  const others = useMemo(() => presence.filter((p) => p.note === path), [presence, path]);
   const changedRemotely = useSync((s) => s.info?.remoteChanged.includes(path) ?? false);
   useEffect(() => { void useSync.getState().check(); }, [path]);
   const unlockedHere = useLocks((s) => path in s.passwords);
