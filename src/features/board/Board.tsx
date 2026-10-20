@@ -8,7 +8,9 @@ import "@xyflow/react/dist/style.css";
 import { FileDown, AlignCenterHorizontal, AlignCenterVertical, AlignEndHorizontal, AlignEndVertical, AlignHorizontalDistributeCenter, AlignStartHorizontal, AlignStartVertical, AlignVerticalDistributeCenter, BoxSelect, Copy, Lock, ExternalLink, FilePlus, Frame as FrameIcon, Maximize, Pencil, Trash2 } from "lucide-react";
 import { useBoard, MAIN_BOARD } from "@/stores/board";
 import { BoardTabs } from "./BoardTabs";
+import { useTr } from "@/lib/i18n";
 import { exportBoardAsHtml } from "@/lib/exportAction";
+import { firstCard, nearestInDirection, type Dir } from "@/lib/boardNav";
 import { alignRects, distributeRects, snapRect, type AlignMode, type Rect } from "@/lib/align";
 import { useWorkspace } from "@/stores/workspace";
 import { useSettings } from "@/stores/settings";
@@ -73,6 +75,7 @@ export function Board() {
   const setRenaming = useUi((s) => s.setRenamingCard);
   const openNote = useUi((s) => s.openNote);
   const rf = useReactFlow();
+  const tr = useTr();
   // With thousands of links, hide the lines while zoomed far out (they're unreadable and expensive).
   const farOut = useStore((st) => st.transform[2] < 0.3);
   const { menu, open: openMenu, close } = useContextMenu();
@@ -168,6 +171,7 @@ export function Board() {
           height: c.h,
           zIndex: 1,
           selected: selected.has(path),
+          ariaLabel: meta.get(path)?.title ?? path,
           data: { path, color: c.color, dim: tagFilter ? !tagMembers?.includes(path) : false, onMenu: showMenu } satisfies NoteNodeData,
         });
       }
@@ -393,6 +397,38 @@ export function Board() {
       const t = e.target as HTMLElement | null;
       if (t && (t.closest("input, textarea, .cm-editor") || t.isContentEditable)) return;
       if (useUi.getState().dialog || useUi.getState().confirmReq || useUi.getState().promptReq) return;
+      const arrow: Dir | null = e.key === "ArrowLeft" ? "left" : e.key === "ArrowRight" ? "right" : e.key === "ArrowUp" ? "up" : e.key === "ArrowDown" ? "down" : null;
+      if (arrow && !e.altKey && !e.ctrlKey && !e.metaKey) {
+        e.stopPropagation();
+        const all = nodesRef.current.filter((n) => n.type === "note");
+        const rect = (n: Node): Rect => ({ id: n.id, x: n.position.x, y: n.position.y, w: n.measured?.width ?? n.width ?? CARD_W, h: n.measured?.height ?? n.height ?? CARD_H });
+        const sel = all.filter((n) => n.selected);
+        if (e.shiftKey && sel.length) {
+          // Shift + arrows nudge the selection by one grid step.
+          e.preventDefault();
+          const step = 22;
+          const dx = arrow === "left" ? -step : arrow === "right" ? step : 0;
+          const dy = arrow === "up" ? -step : arrow === "down" ? step : 0;
+          patchCards(Object.fromEntries(sel.map((n) => [n.id, { x: Math.round(n.position.x + dx), y: Math.round(n.position.y + dy) }])));
+          return;
+        }
+        if (all.length === 0) return;
+        e.preventDefault();
+        const next = sel.length ? nearestInDirection(rect(sel[sel.length - 1]!), all.map(rect), arrow) : firstCard(all.map(rect));
+        if (!next) return;
+        setNodes((ns) => ns.map((n) => ({ ...n, selected: n.id === next })));
+        const target = all.find((n) => n.id === next);
+        if (target) {
+          const r = rect(target);
+          void rf.setCenter(r.x + r.w / 2, r.y + r.h / 2, { zoom: rf.getZoom(), duration: 200 });
+        }
+        return;
+      }
+      if (e.key === "Enter" && selectedCards.length === 1) {
+        e.preventDefault();
+        useUi.getState().openNote(selectedCards[0]!.id);
+        return;
+      }
       if (e.key === "Delete" || e.key === "Backspace") {
         if (selectedCards.length || selectedFrames.length || selectedEdges.length) {
           e.preventDefault();
@@ -400,9 +436,10 @@ export function Board() {
         }
       }
     };
-    window.addEventListener("keydown", key);
-    return () => window.removeEventListener("keydown", key);
-  }, [deleteSelection, selectedCards.length, selectedFrames.length, selectedEdges.length]);
+    // Capture phase: arrows must not also reach React Flow's own keyboard handling.
+    window.addEventListener("keydown", key, true);
+    return () => window.removeEventListener("keydown", key, true);
+  }, [deleteSelection, selectedCards, selectedFrames.length, selectedEdges.length, patchCards, rf]);
 
   const rectsOfSelection = (): Rect[] => selectedCards.map((n) => ({ id: n.id, x: n.position.x, y: n.position.y, w: n.measured?.width ?? n.width ?? CARD_W, h: n.measured?.height ?? n.height ?? CARD_H }));
   const applyLayout = (res: Record<string, { x: number; y: number }>) => patchCards(res);
@@ -481,6 +518,9 @@ export function Board() {
       </ReactFlow>
 
       <BoardTabs />
+      <div className="sr-only" role="status" aria-live="polite">
+        {selectedCards.length === 1 ? `${meta.get(selectedCards[0]!.id)?.title ?? selectedCards[0]!.id}, ${tr("note {i} of {n}", { i: nodes.filter((n) => n.type === "note").findIndex((n) => n.id === selectedCards[0]!.id) + 1, n: nodes.filter((n) => n.type === "note").length })}` : ""}
+      </div>
 
       <div className="board-hud">
         <button className="btn" onClick={() => void rf.fitView({ duration: 350, padding: 0.15 })} data-tip="Fit board (Ctrl+0)"><Maximize size={15} /> Fit</button>

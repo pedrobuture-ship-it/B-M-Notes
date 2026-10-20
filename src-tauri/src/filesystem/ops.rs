@@ -84,6 +84,19 @@ pub fn scan(root: &Path, ignored: &[String]) -> Result<Vec<TreeNode>, String> {
     walk(root, root, ignored, 0)
 }
 
+/// Notes larger than this are left out of the bulk load (they would freeze the editor anyway).
+const MAX_NOTE_BYTES: u64 = 5 * 1024 * 1024;
+
+fn read_one(root: &Path, rel: &str) -> Option<NoteFile> {
+    let abs = root.join(rel);
+    if fs::metadata(&abs).map(|m| m.len() > MAX_NOTE_BYTES).unwrap_or(true) {
+        return None;
+    }
+    // Unreadable / non-UTF8 files are skipped rather than failing the whole load.
+    let content = fs::read_to_string(&abs).ok()?;
+    Some(NoteFile { mtime: mtime_ms(&abs), created: created_ms(&abs), path: rel.to_string(), content })
+}
+
 pub fn read_all(root: &Path, ignored: &[String]) -> Result<Vec<NoteFile>, String> {
     fn collect(nodes: &[TreeNode], out: &mut Vec<String>) {
         for n in nodes {
@@ -97,14 +110,21 @@ pub fn read_all(root: &Path, ignored: &[String]) -> Result<Vec<NoteFile>, String
     let tree = scan(root, ignored)?;
     let mut paths = Vec::new();
     collect(&tree, &mut paths);
+    // Reading thousands of files is I/O bound: spread it over a few threads, keeping the scan order.
+    let threads = std::thread::available_parallelism().map(|n| n.get()).unwrap_or(2).clamp(1, 8);
+    let chunk = paths.len().div_ceil(threads).max(1);
     let mut out = Vec::with_capacity(paths.len());
-    for rel in paths {
-        let abs = root.join(&rel);
-        // Unreadable / non-UTF8 files are skipped rather than failing the whole load.
-        if let Ok(content) = fs::read_to_string(&abs) {
-            out.push(NoteFile { mtime: mtime_ms(&abs), created: created_ms(&abs), path: rel, content });
+    std::thread::scope(|s| {
+        let handles: Vec<_> = paths
+            .chunks(chunk)
+            .map(|part| s.spawn(move || part.iter().filter_map(|rel| read_one(root, rel)).collect::<Vec<_>>()))
+            .collect();
+        for h in handles {
+            if let Ok(mut v) = h.join() {
+                out.append(&mut v);
+            }
         }
-    }
+    });
     Ok(out)
 }
 
@@ -374,6 +394,31 @@ mod tests {
         assert!(crate::filesystem::trash::move_to_trash(&root, "../x").is_err());
         assert!(crate::filesystem::trash::move_to_trash(&root, "").is_err());
         assert!(rename(&root, "a.md", "../b.md").is_err());
+    }
+
+    #[test]
+    fn bulk_load_reads_many_notes_in_scan_order_and_skips_huge_ones() {
+        let (_t, root) = setup();
+        for i in 0..1500 {
+            fs::create_dir_all(root.join(format!("d{}", i % 7))).unwrap();
+            fs::write(root.join(format!("d{}/n{i:04}.md", i % 7)), format!("# Note {i}\n")).unwrap();
+        }
+        fs::write(root.join("huge.md"), vec![b'a'; (MAX_NOTE_BYTES + 1) as usize]).unwrap();
+        fs::write(root.join("bad.md"), [0xff, 0xfe, 0x00]).unwrap();
+        let all = read_all(&root, &[]).unwrap();
+        assert_eq!(all.len(), 1500);
+        assert!(all.iter().all(|n| n.content.starts_with("# Note ")));
+        let tree_order: Vec<_> = {
+            let mut v = Vec::new();
+            fn walk(nodes: &[TreeNode], v: &mut Vec<String>) {
+                for n in nodes {
+                    if n.is_dir { walk(&n.children, v) } else { v.push(n.path.clone()) }
+                }
+            }
+            walk(&scan(&root, &[]).unwrap(), &mut v);
+            v.into_iter().filter(|p| p != "huge.md" && p != "bad.md").collect()
+        };
+        assert_eq!(all.iter().map(|n| n.path.clone()).collect::<Vec<_>>(), tree_order);
     }
 
     #[test]

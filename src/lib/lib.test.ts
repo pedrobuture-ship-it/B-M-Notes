@@ -688,3 +688,40 @@ describe("plugin host", () => {
     expect(await sha256Hex("abc")).toBe("ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad");
   });
 });
+
+import { firstCard, nearestInDirection } from "./boardNav";
+
+describe("keyboard navigation of the mural", () => {
+  const r = (id: string, x: number, y: number) => ({ id, x, y, w: 100, h: 60 });
+  const cards = [r("a", 0, 0), r("b", 300, 10), r("c", 300, 200), r("d", 600, 0), r("e", 0, 300)];
+  it("moves to the nearest card in the arrow direction", () => {
+    expect(nearestInDirection(cards[0]!, cards, "right")).toBe("b");
+    expect(nearestInDirection(cards[1]!, cards, "right")).toBe("d");
+    expect(nearestInDirection(cards[1]!, cards, "left")).toBe("a");
+    expect(nearestInDirection(cards[0]!, cards, "down")).toBe("e");
+    expect(nearestInDirection(cards[2]!, cards, "up")).toBe("b");
+  });
+  it("returns null when nothing is that way, and picks the top-left first", () => {
+    expect(nearestInDirection(cards[0]!, cards, "left")).toBeNull();
+    expect(nearestInDirection(cards[3]!, cards, "right")).toBeNull();
+    expect(firstCard(cards)).toBe("a");
+    expect(firstCard([])).toBeNull();
+  });
+});
+
+describe("large folders", () => {
+  it("indexes and searches thousands of notes quickly (generous limits to avoid flakiness)", () => {
+    const N = 5000;
+    const entries: [string, string][] = Array.from({ length: N }, (_, i) => [`dir${i % 50}/note-${i}.md`, `# Note ${i}\n\nSome text about topic ${i % 97} #tag${i % 31} with [[note-${(i * 7) % N}]] and more words to read.\n`.repeat(4)]);
+    const t0 = performance.now();
+    const idx = buildIndex(entries);
+    const built = performance.now() - t0;
+    const t1 = performance.now();
+    const hits = searchNotes(idx, () => "", "topic 42 tag7");
+    const searched = performance.now() - t1;
+    expect(idx.meta.size).toBe(N);
+    expect(hits.length).toBeGreaterThan(0);
+    expect(built).toBeLessThan(8000);
+    expect(searched).toBeLessThan(1500);
+  });
+});
