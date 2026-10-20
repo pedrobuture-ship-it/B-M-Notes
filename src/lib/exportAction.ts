@@ -24,7 +24,7 @@ export async function exportBoardAsHtml(): Promise<void> {
       .filter((p) => ws.notes[p])
       .map((p) => {
         const content = useWorkspace.getState().notes[p]!.content;
-        const body = isEncrypted(content) ? "<p>🔒 Encrypted note</p>" : renderMarkdown(splitFrontmatter(content).body, { notePath: p, resolves: () => true });
+        const body = isEncrypted(content) ? "<p>🔒 Encrypted note</p>" : renderMarkdown(splitFrontmatter(content).body, { notePath: p, resolves: () => true, math: "mathml" });
         return { path: p, title: index.meta.get(p)?.title ?? stripExt(basename(p)), html: body };
       });
     // Embed the images the cards use.

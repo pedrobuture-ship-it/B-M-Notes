@@ -523,3 +523,43 @@ describe("mural export", () => {
     expect(out).toContain('alt="image not included"');
   });
 });
+
+import { protectCurrency } from "./mathGuard";
+import { dueSummary, extractDates, monthGrid } from "./dates";
+
+describe("math guard", () => {
+  it("escapes prices but keeps real maths", () => {
+    expect(protectCurrency("costs $5 and $6")).toBe("costs \\$5 and \\$6");
+    expect(protectCurrency("price $5, formula $x^2$ ok")).toBe("price \\$5, formula $x^2$ ok");
+    expect(protectCurrency("$a$ and $b$")).toBe("$a$ and $b$");
+    expect(protectCurrency("a lone $ sign")).toBe("a lone \\$ sign");
+    expect(protectCurrency("$$\nx = 1\n$$")).toBe("$$\nx = 1\n$$");
+    expect(protectCurrency("`$5 and $6`")).toBe("`$5 and $6`");
+  });
+  it("renders maths and leaves prices as text", () => {
+    const html = renderMarkdown("Euler: $e^{i\\pi}+1=0$, it costs $5 and $6.\n\n$$\\sum_{i=1}^n i$$\n", { notePath: "a.md" });
+    expect(html).toContain("katex");
+    expect(html).toContain("it costs $5 and $6");
+  });
+});
+
+describe("dates", () => {
+  const note = "# Plan\n- [ ] file taxes @2026-04-15\n- [x] book flights @2026-03-01 09:30\nmeeting on @2026-02-30 (not real)\n`@2026-05-05` in code\nemail a@2026-05-05.com\nplain note @2026-06-01\n";
+  it("finds real dates, times and task status; ignores code and emails", () => {
+    expect(extractDates(note).map((d) => [d.date, d.time, d.taskIndex, d.done])).toEqual([
+      ["2026-04-15", null, 0, false],
+      ["2026-03-01", "09:30", 1, true],
+      ["2026-06-01", null, null, false],
+    ]);
+  });
+  it("summarises open tasks due today or earlier", () => {
+    expect(dueSummary({ "a.md": note }, "2026-04-15")).toEqual({ overdue: 0, today: 1 });
+    expect(dueSummary({ "a.md": note }, "2026-05-01")).toEqual({ overdue: 1, today: 0 });
+  });
+  it("builds month grids", () => {
+    const w = monthGrid(2026, 1, 0); // February 2026 starts on a Sunday
+    expect(w[0]![0]).toBe("2026-02-01");
+    expect(w.flat().filter(Boolean).length).toBe(28);
+    expect(monthGrid(2026, 2, 1)[0]!.slice(0, 6).every((c) => c === null)).toBe(true); // March 1st 2026 is a Sunday: last column on a Monday-first grid
+  });
+});

@@ -19,6 +19,8 @@ import { useUi } from "@/stores/ui";
 import { basename } from "@/lib/paths";
 import { ipc } from "@/lib/ipc";
 import { TemplateDialog } from "@/features/templates/TemplateDialog";
+import { CalendarDialog } from "@/features/calendar/CalendarDialog";
+import { useDueReminder } from "@/features/shell/useDueReminder";
 import { MindMapDialog } from "@/features/mindmap/MindMapDialog";
 import { HealthDialog } from "@/features/health/HealthDialog";
 import { PropertiesDialog } from "@/features/properties/PropertiesDialog";
@@ -94,6 +96,7 @@ export function App() {
 
   useAutoSync();
   useAutoBackup();
+  useDueReminder();
 
   // Flush pending saves when the window is closing / hidden.
   useEffect(() => {
@@ -129,6 +132,7 @@ export function App() {
       {info && dialog === "properties" && <PropertiesDialog />}
       {info && dialog === "health" && <HealthDialog />}
       {info && dialog === "mindmap" && <MindMapDialog />}
+      {info && dialog === "calendar" && <CalendarDialog />}
       <ConfirmDialog />
       <ChoiceDialog />
       <PromptDialog />

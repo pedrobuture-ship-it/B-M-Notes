@@ -4,6 +4,7 @@
 @import "@fontsource/patrick-hand/400.css";
 @import "@fontsource-variable/literata/index.css";
 @import "@fontsource/jetbrains-mono/400.css";
+@import "katex/dist/katex.min.css";
 @import "./tokens.css";
 @import "./design.css";
 @import "./layout.css";

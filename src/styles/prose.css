@@ -37,3 +37,12 @@
 .hljs-title, .hljs-section, .hljs-name { color: #86b2cf; }
 .hljs-type, .hljs-class .hljs-title { color: #c9a6d8; }
 .hljs-meta, .hljs-symbol, .hljs-bullet { color: #d98ca0; }
+
+.md-prose .due { font-size: 0.85em; padding: 0 6px; border-radius: 8px; border: 1.5px solid currentColor; white-space: nowrap; }
+.md-prose .due-later { color: #3f6b2a; }
+.md-prose .due-today { color: #8a5a12; font-weight: 700; background: rgb(217 164 65 / 0.25); }
+.md-prose .due-past { color: #a3402b; }
+.md-prose .katex-display { overflow-x: auto; overflow-y: hidden; }
+.md-prose .mermaid-diagram { margin: 10px 0; overflow-x: auto; }
+.md-prose .mermaid-diagram svg { max-width: 100%; height: auto; }
+.md-prose pre.mermaid-error { border: 2px dashed #a3402b; }

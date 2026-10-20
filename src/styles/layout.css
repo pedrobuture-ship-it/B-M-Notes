@@ -138,3 +138,11 @@
 .timeline-title { font-family: var(--font-hand); font-size: 1.3rem; font-weight: 700; }
 .timeline-dir { font-size: 0.8rem; opacity: 0.6; align-self: center; }
 .timeline-snippet { grid-column: 2 / span 2; font-size: 0.9rem; opacity: 0.8; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 3px; }
+.cal-head { text-align: center; font-size: 0.8rem; color: var(--ink-faint); }
+.cal-cell { position: relative; aspect-ratio: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; border: 2px solid transparent; border-radius: 10px 14px 10px 14px; background: var(--surface-2); }
+.cal-cell:hover { border-color: var(--line); }
+.cal-cell[data-today="true"] { border-color: var(--amber); }
+.cal-cell[data-selected="true"] { background: var(--surface-3); }
+.cal-cell[data-late="true"] .cal-count { background: var(--red); color: #fff; }
+.cal-count { font-size: 0.7rem; padding: 0 6px; border-radius: 8px; background: var(--amber); color: #2a1f0b; }

@@ -5,6 +5,9 @@ import remarkRehype from "remark-rehype";
 import rehypeSanitize, { defaultSchema } from "rehype-sanitize";
 import type { Options as Schema } from "rehype-sanitize";
 import rehypeHighlight from "rehype-highlight";
+import remarkMath from "remark-math";
+import rehypeKatex from "rehype-katex";
+import type { Options as KatexOptions } from "rehype-katex";
 import rehypeStringify from "rehype-stringify";
 import type { Root as MdRoot, Text, PhrasingContent, Parent } from "mdast";
 import type { Root as HRoot, Element } from "hast";
@@ -12,6 +15,8 @@ import { visit, SKIP } from "unist-util-visit";
 import { dirname, resolveRelative } from "./paths";
 import { slugHeading, sectionOf } from "./headings";
 import { splitFrontmatter } from "./frontmatter";
+import { protectCurrency } from "./mathGuard";
+import { DATE_TOKEN, isRealDate } from "./dates";
 
 const isWindows = typeof navigator !== "undefined" && /Windows/i.test(navigator.userAgent);
 const ASSET_BASE = isWindows ? "http://mural.localhost/" : "mural://localhost/";
@@ -92,6 +97,8 @@ function remarkWikiLinks() {
 }
 
 interface RehypeOpts {
+  /** Today as YYYY-MM-DD, used to colour `@date` chips. */
+  today: string;
   notePath: string;
   interactiveTasks: boolean;
   resolves: (target: string) => boolean;
@@ -101,7 +108,8 @@ function rehypeNoteFeatures(opts: RehypeOpts) {
   return (tree: HRoot) => {
     let taskIndex = 0;
     const noteDir = dirname(opts.notePath);
-    visit(tree, "element", (node: Element) => {
+    visit(tree, "element", (node: Element, index, parent) => {
+      if (parent && index !== undefined && (parent as Element).tagName !== "code" && (parent as Element).tagName !== "pre") dueChips(node, opts.today);
       if (node.tagName === "input" && node.properties?.type === "checkbox") {
         node.properties["data-task"] = String(taskIndex++);
         if (opts.interactiveTasks) delete node.properties.disabled;
@@ -130,6 +138,30 @@ function rehypeNoteFeatures(opts: RehypeOpts) {
   };
 }
 
+/** Turns `@2026-11-01` inside the text children of `el` into `<span class="due">` chips. */
+function dueChips(el: Element, today: string) {
+  if (el.tagName === "code" || el.tagName === "pre" || !el.children.some((c) => c.type === "text" && c.value.includes("@"))) return;
+  const next: Element["children"] = [];
+  for (const c of el.children) {
+    if (c.type !== "text" || !c.value.includes("@")) {
+      next.push(c);
+      continue;
+    }
+    let last = 0;
+    for (const m of c.value.matchAll(DATE_TOKEN)) {
+      if (!isRealDate(Number(m[1]), Number(m[2]), Number(m[3]))) continue;
+      const date = `${m[1]}-${m[2]}-${m[3]}`;
+      if (m.index > last) next.push({ type: "text", value: c.value.slice(last, m.index) });
+      const cls = date < today ? "due-past" : date === today ? "due-today" : "due-later";
+      next.push({ type: "element", tagName: "span", properties: { className: ["due", cls], "data-date": date }, children: [{ type: "text", value: m[0] }] });
+      last = m.index + m[0].length;
+    }
+    if (last === 0) next.push(c);
+    else if (last < c.value.length) next.push({ type: "text", value: c.value.slice(last) });
+  }
+  el.children = next;
+}
+
 function hastText(node: Element | { children?: unknown[]; value?: string }): string {
   if ("value" in node && typeof node.value === "string") return node.value;
   return ((node.children ?? []) as (Element | { value?: string })[]).map((c) => hastText(c as Element)).join("");
@@ -147,7 +179,7 @@ const schema: Schema = {
   ...defaultSchema,
   attributes: {
     ...defaultSchema.attributes,
-    code: [...(defaultSchema.attributes?.code ?? []), ["className", /^(hljs|language-.*)$/]],
+    code: [...(defaultSchema.attributes?.code ?? []), ["className", /^(hljs|language-.*|math-inline|math-display)$/]],
     span: [...(defaultSchema.attributes?.span ?? []), ["className", /^hljs.*$/]],
     input: [...(defaultSchema.attributes?.input ?? []), "checked", "disabled", "type"],
     div: [...(defaultSchema.attributes?.div ?? []), ["className", "embed"]],
@@ -162,22 +194,34 @@ export interface RenderOptions {
   resolves?: (target: string) => boolean;
   /** Looks up a note for `![[note]]` embeds. Without it, embeds render as plain links. */
   embed?: (target: string) => EmbedSource | null;
+  /** `html` (default) needs the KaTeX stylesheet; `mathml` works anywhere (used for exports). */
+  math?: "html" | "mathml";
+  /** Today as YYYY-MM-DD; defaults to the system date. */
+  today?: string;
+}
+
+function localToday(): string {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 }
 
 export function renderMarkdown(content: string, options: RenderOptions): string {
   const processor = unified()
     .use(remarkParse)
     .use(remarkGfm)
+    .use(remarkMath)
     .use(remarkEmbeds, options.embed)
     .use(remarkWikiLinks)
     .use(remarkRehype)
     .use(rehypeSanitize, schema)
+    .use(rehypeKatex, { output: options.math === "mathml" ? "mathml" : "htmlAndMathml", strict: "ignore", trust: false, throwOnError: false } as KatexOptions)
     .use(rehypeHighlight, { detect: false, ignoreMissing: true })
     .use(rehypeNoteFeatures, {
+      today: options.today ?? localToday(),
       notePath: options.notePath,
       interactiveTasks: options.interactiveTasks ?? false,
       resolves: options.resolves ?? (() => true),
     })
     .use(rehypeStringify);
-  return String(processor.processSync(content));
+  return String(processor.processSync(protectCurrency(content)));
 }
