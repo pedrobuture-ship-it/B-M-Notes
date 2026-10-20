@@ -1,6 +1,7 @@
 mod commands;
 mod filesystem;
 mod github;
+mod sync;
 mod watcher;
 
 use filesystem::{paths, AppState};
@@ -77,6 +78,13 @@ pub fn run() {
             github::github_login_poll,
             github::github_status,
             github::github_logout,
+            sync::sync_status,
+            sync::sync_link,
+            sync::sync_now,
+            sync::sync_resolve,
+            sync::sync_unlink,
+            sync::github_list_repos,
+            sync::github_create_repo,
         ])
         .run(tauri::generate_context!())
         .expect("error while running buturenotes");

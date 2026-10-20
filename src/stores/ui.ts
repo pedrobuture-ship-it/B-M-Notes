@@ -34,6 +34,7 @@ interface UiState {
   activeNote: string | null;
   noteMode: NoteMode;
   dialog: DialogName;
+  settingsSection: string;
   tagFilter: string | null;
   editingCard: string | null;
   renamingCard: string | null;
@@ -48,6 +49,7 @@ interface UiState {
   closeNote: () => void;
   setNoteMode: (m: NoteMode) => void;
   setDialog: (d: DialogName) => void;
+  openSettings: (section: string) => void;
   setTagFilter: (t: string | null) => void;
   setEditingCard: (p: string | null) => void;
   setRenamingCard: (p: string | null) => void;
@@ -68,6 +70,7 @@ export const useUi = create<UiState>((set, get) => ({
   activeNote: null,
   noteMode: "split",
   dialog: null,
+  settingsSection: "Appearance",
   tagFilter: null,
   editingCard: null,
   renamingCard: null,
@@ -82,6 +85,7 @@ export const useUi = create<UiState>((set, get) => ({
   closeNote: () => set({ activeNote: null, view: "board" }),
   setNoteMode: (noteMode) => set({ noteMode }),
   setDialog: (dialog) => set({ dialog }),
+  openSettings: (settingsSection) => set({ settingsSection, dialog: "settings" }),
   setTagFilter: (tagFilter) => set({ tagFilter }),
   setEditingCard: (editingCard) => set({ editingCard }),
   setRenamingCard: (renamingCard) => set({ renamingCard }),

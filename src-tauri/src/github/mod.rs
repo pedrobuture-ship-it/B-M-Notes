@@ -57,7 +57,7 @@ pub struct GithubUser {
     name: Option<String>,
 }
 
-fn client() -> Res<reqwest::Client> {
+pub(crate) fn client() -> Res<reqwest::Client> {
     reqwest::Client::builder()
         .user_agent(UA)
         .timeout(std::time::Duration::from_secs(20))
@@ -65,7 +65,7 @@ fn client() -> Res<reqwest::Client> {
         .map_err(|e| e.to_string())
 }
 
-fn net(e: reqwest::Error) -> String {
+pub(crate) fn net(e: reqwest::Error) -> String {
     format!("Could not reach GitHub: {e}")
 }
 

@@ -214,6 +214,9 @@ button.chip:hover, .chip[data-active="true"] { color: var(--amber); border-color
 .toast[data-kind="success"] { border-color: var(--green); }
 
 /* ---------- motion ---------- */
+@keyframes spin { to { transform: rotate(360deg); } }
+.spin { animation: spin 1s linear infinite; }
+@media (prefers-reduced-motion: reduce) { .spin { animation: none; } }
 @keyframes pop-in { from { opacity: 0; transform: translateY(6px) scale(0.97); } to { opacity: 1; transform: none; } }
 @keyframes fade-in { from { opacity: 0; } to { opacity: 1; } }
 @keyframes toast-in { from { opacity: 0; transform: translateX(24px) rotate(2deg); } to { opacity: 1; transform: none; } }

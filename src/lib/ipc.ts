@@ -23,6 +23,24 @@ export interface GithubUser {
   name: string | null;
 }
 
+export interface SyncInfo {
+  gitAvailable: boolean;
+  linked: boolean;
+  remote: string | null;
+  branch: string | null;
+  conflicts: string[];
+  dirty: boolean;
+  ahead: number;
+  behind: number;
+  largeFiles: string[];
+}
+
+export interface GithubRepo {
+  fullName: string;
+  private: boolean;
+  url: string;
+}
+
 export interface MetaRead {
   content: string | null;
   backup: string | null;
@@ -71,6 +89,13 @@ export const ipc = {
   githubLoginPoll: (deviceCode: string) => call<{ status: "pending" | "slow_down" | "done"; login: string | null }>("github_login_poll", { deviceCode }),
   githubStatus: () => call<GithubUser | null>("github_status"),
   githubLogout: () => call<void>("github_logout"),
+  githubListRepos: () => call<GithubRepo[]>("github_list_repos"),
+  githubCreateRepo: (name: string, isPrivate: boolean) => call<GithubRepo>("github_create_repo", { name, private: isPrivate }),
+  syncStatus: () => call<SyncInfo>("sync_status"),
+  syncLink: (url: string) => call<SyncInfo>("sync_link", { url }),
+  syncNow: () => call<SyncInfo>("sync_now"),
+  syncResolve: (path: string, choice: "mine" | "theirs" | "both") => call<SyncInfo>("sync_resolve", { path, choice }),
+  syncUnlink: () => call<SyncInfo>("sync_unlink"),
   onFsChange: (cb: (c: FsChange) => void): Promise<UnlistenFn> => listen<FsChange>("fs-change", (e) => cb(e.payload)),
 };
 

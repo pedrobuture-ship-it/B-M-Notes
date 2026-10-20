@@ -18,6 +18,7 @@ import { useBoard } from "@/stores/board";
 import { useUi } from "@/stores/ui";
 import { basename } from "@/lib/paths";
 import { ipc } from "@/lib/ipc";
+import { useAutoSync } from "@/features/shell/useAutoSync";
 
 function MainArea() {
   const view = useUi((s) => s.view);
@@ -76,6 +77,8 @@ export function App() {
     document.documentElement.dataset.theme = appearance.theme;
     document.documentElement.style.colorScheme = appearance.theme;
   }, [appearance]);
+
+  useAutoSync();
 
   // Flush pending saves when the window is closing / hidden.
   useEffect(() => {

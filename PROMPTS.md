@@ -18,11 +18,13 @@ Pedidos feitos durante o desenvolvimento, em ordem. O Client ID do GitHub OAuth 
 
 ## Plano de sincronização com o GitHub (opcional)
 
-1. **Login** pelo Device Flow: código no app, autorização no navegador, token no chaveiro do sistema.
+1. **Login** pelo Device Flow: código no app, autorização no navegador, token em arquivo na pasta de configuração do app (0600).
 2. **Ligar a pasta a um repositório**: criar novo, escolher um existente ou colar a URL.
-3. **Motor de sincronização** com `git2`: commit automático, `fetch` periódico, `push`.
+3. **Motor de sincronização** com o `git` do sistema: commit automático, `fetch` periódico, `push`.
 4. **Conflitos**: merge de texto por linha; tela com "minha", "do outro" ou "as duas"; merge por card no `board.json`.
 5. **Interface**: ícone de status no cabeçalho, painel de sincronização, aviso ao editar.
 6. **Testes e documentação**.
+
+Implementado nas fases 1 a 6 (login, ligar repositório, motor `git`, conflitos, interface, testes e README).
 
 Tudo desligado por padrão: sem conectar, o app não faz nenhuma chamada de rede.

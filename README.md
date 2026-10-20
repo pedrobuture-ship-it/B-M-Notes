@@ -51,11 +51,28 @@ MyVault/
 
 ## Privacy & safety
 
-- Fully offline: no telemetry, no remote API, strict CSP.
+- Fully offline by default: no telemetry, strict CSP. The only network use is the optional GitHub sync below, which you turn on yourself.
 - Every filesystem command validates paths against the opened workspace (no `..`, no absolute paths, no
   symlink escapes), writes are atomic (temp file + rename), and deleting always asks first.
 - External edits are picked up live by the watcher. If a note has unsaved local edits when the file changes on
   disk, you get a banner to keep yours or load the disk version.
+
+## Sync with GitHub (optional)
+
+Off by default: without it the app makes no network calls. To share a folder with a friend:
+
+1. **Settings → Sync → Connect to GitHub.** Your browser opens GitHub; paste the short code shown in the app. The token is kept in the app's config folder (permissions `0600`), never inside your notes.
+2. **Pick a repository:** create a new one (private by default), choose an existing one, or paste `owner/name`. Your friend does the same with the same repository (they need write access).
+3. From then on the app commits your changes ~15 s after you stop typing, checks for new changes every 45 s, and pushes. The cloud icon in the header shows the state; click it to sync now.
+
+How conflicts are handled:
+
+- Different notes, or different lines of the same note, merge automatically (it is plain `git`).
+- If you both changed the same lines, the note shows up under **Settings → Sync → Changed on both sides**: *Keep mine*, *Keep theirs*, or *Keep both* (the other version is saved as `note (from other).md`). Nothing is lost.
+- `.mural/board.json` merges per card, so moving different cards never conflicts; the viewport is local.
+- `.mural/settings.json`, backups and `sync.json` are never uploaded (added to `.gitignore`).
+
+Requirements: `git` installed. Unlinking (Settings → Sync) stops syncing and deletes nothing. Large files (> 10 MB) trigger a warning because they make the repository heavy.
 
 ## Install / run from source
 

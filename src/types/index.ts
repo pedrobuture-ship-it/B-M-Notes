@@ -64,6 +64,7 @@ export interface Settings {
   editor: { lineNumbers: boolean; wordWrap: boolean; fontSize: number; autosaveDelay: number };
   files: { assetsFolder: string; ignoredFolders: string[]; dailyFolder: string };
   board: { grid: boolean; snap: boolean; showConnections: boolean };
+  sync: { auto: boolean };
 }
 
 export type SaveStatus = "idle" | "saving" | "saved" | "error";

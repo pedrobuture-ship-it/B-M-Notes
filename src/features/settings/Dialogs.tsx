@@ -1,4 +1,6 @@
 import { useEffect, useRef, useState, type ReactNode } from "react";
+import { Row, Toggle } from "./controls";
+import { SyncPanel } from "./SyncPanel";
 import { Dialog } from "@/components/Dialogs";
 import { useSettings } from "@/stores/settings";
 import { useUi } from "@/stores/ui";
@@ -6,19 +8,6 @@ import { useWorkspace } from "@/stores/workspace";
 import { SHORTCUTS } from "@/lib/shortcuts";
 import { ipc, type GithubDevice, type GithubUser } from "@/lib/ipc";
 import { LogoMark } from "@/components/doodles";
-
-function Toggle({ checked, onChange, label }: { checked: boolean; onChange: (v: boolean) => void; label: string }) {
-  return <button role="switch" aria-checked={checked} aria-label={label} className="toggle" onClick={() => onChange(!checked)} />;
-}
-
-function Row({ title, hint, children }: { title: string; hint?: string; children: ReactNode }) {
-  return (
-    <div className="setting-row">
-      <div><div>{title}</div>{hint && <small>{hint}</small>}</div>
-      {children}
-    </div>
-  );
-}
 
 function NumberField({ value, min, max, step = 1, onChange, label }: { value: number; min: number; max: number; step?: number; onChange: (n: number) => void; label: string }) {
   return <input className="field" style={{ width: 90 }} type="number" aria-label={label} value={value} min={min} max={max} step={step} onChange={(e) => { const n = Number(e.target.value); if (Number.isFinite(n)) onChange(n); }} />;
@@ -53,7 +42,7 @@ export function ShortcutsDialog() {
 }
 
 /** Optional GitHub sign-in (device flow). Nothing is contacted until the user clicks Connect. */
-function GithubConnect() {
+function GithubConnect({ children }: { children?: ReactNode }) {
   const [user, setUser] = useState<GithubUser | null>(null);
   const [checking, setChecking] = useState(true);
   const [device, setDevice] = useState<GithubDevice | null>(null);
@@ -119,6 +108,7 @@ function GithubConnect() {
         </div>
       )}
       {error && <p role="alert" style={{ color: "var(--red)", fontWeight: 700 }}>{error}</p>}
+      {user && children}
     </>
   );
 }
@@ -128,7 +118,10 @@ const SECTIONS = ["Appearance", "Editor", "Files", "Daily Notes", "Board", "Sync
 export function SettingsDialog() {
   const setDialog = useUi((s) => s.setDialog);
   const { settings, update } = useSettings();
-  const [section, setSection] = useState<(typeof SECTIONS)[number]>("Appearance");
+  const [section, setSection] = useState<(typeof SECTIONS)[number]>(() => {
+    const s = useUi.getState().settingsSection;
+    return (SECTIONS as readonly string[]).includes(s) ? (s as (typeof SECTIONS)[number]) : "Appearance";
+  });
   const [ignored, setIgnored] = useState(settings.files.ignoredFolders.join(", "));
 
   return (
@@ -199,7 +192,7 @@ export function SettingsDialog() {
               <Row title="Show connections" hint="Lines drawn from [[wiki links]] and manual links."><Toggle label="Show connections" checked={settings.board.showConnections} onChange={(v) => update((s) => ({ ...s, board: { ...s.board, showConnections: v } }))} /></Row>
             </>
           )}
-          {section === "Sync" && <GithubConnect />}
+          {section === "Sync" && <GithubConnect><SyncPanel /></GithubConnect>}
           {section === "Keyboard" && <div style={{ margin: "-18px -22px" }}><ShortcutsList /></div>}
         </div>
       </div>

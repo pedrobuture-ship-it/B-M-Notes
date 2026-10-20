@@ -13,6 +13,7 @@ export const DEFAULT_SETTINGS: Settings = {
   editor: { lineNumbers: false, wordWrap: true, fontSize: 15, autosaveDelay: 600 },
   files: { assetsFolder: "assets", ignoredFolders: [], dailyFolder: "daily" },
   board: { grid: true, snap: false, showConnections: true },
+  sync: { auto: true },
 };
 
 const num = (v: unknown, d: number): number => (typeof v === "number" && Number.isFinite(v) ? v : d);
@@ -90,6 +91,7 @@ export function normalizeSettings(raw: unknown): Settings {
       snap: bool(b.snap, d.board.snap),
       showConnections: bool(b.showConnections, d.board.showConnections),
     },
+    sync: { auto: bool(obj(r.sync).auto, d.sync.auto) },
   };
 }
 
