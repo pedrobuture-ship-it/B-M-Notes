@@ -78,3 +78,42 @@ Cada item abaixo é um prompt autocontido; a implementação segue a ordem numé
 
 ## 14. Fechamento
 > Atualizar README, AUDIT e testes; rodar tsc, eslint, vitest e cargo test; commit e push na `main`.
+
+---
+
+# Rodada 3 — planos e prompts
+
+Pedido: *"gere planos para isso e comece a fazer sem me perguntar nada; não bote IA no app de jeito nenhum; não interrompa o processo atual"*.
+Regra do produto: **nenhuma função de IA/LLM** no app. Tudo abaixo é determinístico e local.
+
+## Colaboração
+
+**C1. Presença** — Plano: cada pessoa publica um commit mínimo (`{login, nota, hora}`) numa branch própria `bm-presence-<login>` do repositório (force-push, sem poluir a `main`); o ciclo de sync já faz `fetch`, então basta ler as branches dos outros. Aparece "Fulano está nesta nota" na página da nota. Desligável (Sync → Presença). Expira em 3 min.
+**C2. Aviso antes de conflitar** — Plano: `status()` passa a calcular `remoteChanged` (`git diff --name-only HEAD...origin/<branch>`). Se a nota aberta está nessa lista, banner "mudou no remoto" com botão "Sincronizar agora".
+**C3. Compartilhar só parte** — Plano: lista de caminhos privados (por máquina) gravada num bloco gerenciado de `.git/info/exclude`; arquivos já rastreados exigem confirmação ("o outro perde a cópia") e saem do repositório com `git rm --cached`. Menu "Não sincronizar" em notas e murais.
+
+## Mural
+
+**M1. Linha do tempo** — Plano: vista nova que agrupa notas por dia (hoje, ontem, datas), alternando "editado" e "criado" (Rust passa a devolver `created`).
+**M2. Mapa mental** — Plano: diálogo que desenha em SVG a árvore de títulos `#`/`##`/`###` da nota; clicar abre a nota na seção.
+**M3. Cards com tarefas** — Plano: chip "3/5" no rodapé do card; checkboxes do card já editam o arquivo.
+**M4. Snap magnético e alinhamento** — Plano: guias ao arrastar (bordas e centros dos outros cards, limiar de 6 px) + botões alinhar/distribuir na barra de seleção.
+**M5. Mural como página** — Plano: exportar o mural atual para um HTML único (cards renderizados, setas em SVG, imagens embutidas, pan/zoom em JS puro).
+
+## Conteúdo
+
+**K1. Mermaid** — Plano: blocos ```` ```mermaid ```` renderizados no preview com `mermaid` carregado sob demanda (`securityLevel: strict`).
+**K2. Fórmulas** — Plano: `remark-math` + `rehype-katex` (`$...$`, `$$...$$`), CSS e fontes locais.
+**K3. Tabelas** — Plano: analisador/serializador de tabelas Markdown + editor em grade (adicionar/remover linhas e colunas, alinhamento) aberto a partir do cursor.
+**K4. Anexos** — Plano: aceitar PDF e áudio no colar/soltar; áudio com player, PDF como cartão com "Abrir".
+**K5. Gravar áudio** — Plano: `MediaRecorder` num diálogo (gravar/parar/inserir), salvo em `assets/`.
+**K6. Datas** — Plano: tokens `@2026-11-01` viram chips no preview; vista de Calendário (mês) com notas e tarefas por dia; avisos de vencidos ao abrir.
+
+## Produto
+
+**P1. Instalador e atualização** — Plano: workflow do GitHub Actions (tauri-action) que gera AppImage, .deb, .exe/.msi e .dmg numa release; verificação de atualização opcional pela API de releases (sem chave de assinatura).
+**P2. Plugins** — Plano: scripts `.mural/plugins/*.js` locais (nunca sincronizados), executados num Worker isolado sem rede, só com a API de comandos por mensagens, e só depois de aprovação por hash.
+**P3. Modo foco** — Plano: esconde cabeçalho e barra lateral; atalho próprio; `Esc` sai.
+**P4. Idiomas** — Plano: dicionário `t()` com inglês e português do Brasil, seletor em Aparência, cobrindo a interface principal.
+**P5. Acessibilidade** — Plano: setas navegam entre cards, Enter abre, Shift+setas movem; rótulos ARIA e região "live" anunciando a seleção.
+**P6. Desempenho** — Plano: leitura paralela no Rust, limite para arquivos gigantes e teste de carga com milhares de notas; índice em disco só se as medidas pedirem.

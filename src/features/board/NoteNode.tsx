@@ -11,6 +11,7 @@ import { basename, stripExt } from "@/lib/paths";
 import { hashUnit } from "@/lib/board";
 import { renameNoteFromTitle } from "@/lib/actions";
 import { isEncrypted } from "@/lib/crypto";
+import { extractTasks } from "@/lib/tasks";
 import type { CardColor } from "@/types";
 
 export interface NoteNodeData extends Record<string, unknown> {
@@ -61,6 +62,11 @@ export const NoteNode = memo(function NoteNode({ data, selected, dragging }: Nod
   }, [note?.content, editing]);
 
   const options = useMemo(() => ({ lineNumbers: false, wordWrap: true, fontSize: Math.max(12, editorSettings.fontSize - 2) }), [editorSettings.fontSize]);
+
+  const taskStat = useMemo(() => {
+    const t = note ? extractTasks(note.content) : [];
+    return { total: t.length, done: t.filter((x) => x.done).length };
+  }, [note]);
 
   if (!note) return null;
   if (lod && !editing) {
@@ -148,6 +154,7 @@ export const NoteNode = memo(function NoteNode({ data, selected, dragging }: Nod
         )}
       </div>
       <div className="note-foot">
+        {taskStat.total > 0 && <span className="chip" data-tip="Tasks done" aria-label={`${taskStat.done} of ${taskStat.total} tasks done`}>☑ {taskStat.done}/{taskStat.total}</span>}
         {(tags ?? []).slice(0, 4).map((t) => <span key={t} className="chip">#{t}</span>)}
         {tags && tags.length > 4 && <span className="chip">+{tags.length - 4}</span>}
         {selected && !editing && (

@@ -23,6 +23,7 @@ function run(id: ActionId) {
     case "shortcuts": return ui.setDialog("shortcuts");
     case "back": return ui.goBack();
     case "forward": return ui.goForward();
+    case "zen": return ui.setZen(!ui.zen);
     case "fit": return board("fit");
     case "zoomIn": return board("zoomIn");
     case "zoomOut": return board("zoomOut");
@@ -37,6 +38,7 @@ export function useGlobalShortcuts(enabled: boolean) {
       const ui = useUi.getState();
       if (e.key === "Escape") {
         if (ui.editingCard) ui.setEditingCard(null);
+        else if (ui.zen && !ui.dialog && !ui.confirmReq && !ui.promptReq && !ui.choiceReq) ui.setZen(false);
         return;
       }
       const combo = comboFromEvent(e);

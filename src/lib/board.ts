@@ -9,7 +9,7 @@ export function emptyBoard(): BoardData {
 }
 
 export const DEFAULT_SETTINGS: Settings = {
-  appearance: { theme: "dark", density: "cozy", fontSize: 15 },
+  appearance: { theme: "dark", density: "cozy", fontSize: 15, language: "auto" },
   editor: { lineNumbers: false, wordWrap: true, fontSize: 15, autosaveDelay: 600 },
   files: { assetsFolder: "assets", ignoredFolders: [], dailyFolder: "daily", trashRetentionDays: 30 },
   board: { grid: true, snap: false, showConnections: true },
@@ -76,6 +76,7 @@ export function normalizeSettings(raw: unknown): Settings {
   return {
     appearance: {
       theme: a.theme === "light" ? "light" : "dark",
+      language: a.language === "en" || a.language === "pt-BR" ? a.language : "auto",
       density: a.density === "compact" ? "compact" : "cozy",
       fontSize: Math.min(22, Math.max(12, num(a.fontSize, d.appearance.fontSize))),
     },

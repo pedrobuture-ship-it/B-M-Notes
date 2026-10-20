@@ -413,3 +413,62 @@ describe("note encryption", () => {
     await expect(decryptText("plain text", "pw")).rejects.toThrow("not encrypted");
   });
 });
+
+import { alignRects, distributeRects, snapRect } from "./align";
+
+describe("align and snap", () => {
+  const r = (id: string, x: number, y: number, w = 100, h = 50) => ({ id, x, y, w, h });
+  it("aligns to edges and centres of the selection", () => {
+    const rs = [r("a", 0, 0), r("b", 50, 100, 200, 80)];
+    expect(alignRects(rs, "left")).toEqual({ a: { x: 0, y: 0 }, b: { x: 0, y: 100 } });
+    expect(alignRects(rs, "right")).toEqual({ a: { x: 150, y: 0 }, b: { x: 50, y: 100 } });
+    expect(alignRects(rs, "bottom")).toEqual({ a: { x: 0, y: 130 }, b: { x: 50, y: 100 } });
+    expect(alignRects(rs, "hcenter").a.x).toBe(75);
+    expect(alignRects([r("a", 0, 0)], "left")).toEqual({});
+  });
+  it("distributes with equal gaps and keeps the ends", () => {
+    const out = distributeRects([r("a", 0, 0), r("b", 10, 0), r("c", 400, 0)], "x");
+    expect(out).toEqual({ a: { x: 0, y: 0 }, b: { x: 200, y: 0 }, c: { x: 400, y: 0 } });
+    expect(distributeRects([r("a", 0, 0), r("b", 5, 0)], "x")).toEqual({});
+  });
+  it("snaps to the nearest edge or centre within the threshold", () => {
+    const others = [r("o", 200, 100, 100, 50)];
+    const s = snapRect(r("m", 195, 103), others, 6);
+    expect(s).toEqual({ dx: 5, dy: -3, guideX: 200, guideY: 100 });
+    expect(snapRect(r("m", 600, 300), others, 6)).toEqual({ dx: 0, dy: 0, guideX: null, guideY: null });
+  });
+});
+
+import { dayKey, dayLabel, groupByDay } from "./timeline";
+import { resolveLang, translate } from "./i18n";
+
+describe("timeline", () => {
+  it("groups by local day, newest first", () => {
+    const at = (d: string) => new Date(d).getTime();
+    const g = groupByDay([
+      { path: "a", time: at("2026-03-01T09:00:00") },
+      { path: "b", time: at("2026-03-02T23:00:00") },
+      { path: "c", time: at("2026-03-02T08:00:00") },
+    ]);
+    expect(g.map((x) => [x.day, x.items.map((i) => i.path)])).toEqual([["2026-03-02", ["b", "c"]], ["2026-03-01", ["a"]]]);
+  });
+  it("labels today and yesterday", () => {
+    const now = new Date("2026-03-05T12:00:00").getTime();
+    expect(dayLabel(dayKey(now), now)).toBe("Today");
+    expect(dayLabel(dayKey(now - 86_400_000), now)).toBe("Yesterday");
+    expect(dayLabel("2026-01-02", now, "en-US")).toContain("2026");
+  });
+});
+
+describe("i18n", () => {
+  it("falls back to English and fills placeholders", () => {
+    expect(translate("pt-BR", "Timeline")).toBe("Linha do tempo");
+    expect(translate("pt-BR", "Not translated yet")).toBe("Not translated yet");
+    expect(translate("en", "Hello {name}", { name: "Ana" })).toBe("Hello Ana");
+  });
+  it("resolves the automatic language from the system", () => {
+    expect(resolveLang("auto", "pt-PT")).toBe("pt-BR");
+    expect(resolveLang("auto", "de-DE")).toBe("en");
+    expect(resolveLang("en", "pt-BR")).toBe("en");
+  });
+});

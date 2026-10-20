@@ -9,6 +9,7 @@ export interface NoteFile {
   path: string;
   content: string;
   mtime: number;
+  created: number;
 }
 
 export interface WorkspaceInfo {
@@ -66,7 +67,7 @@ export interface SavedSearch {
 }
 
 export interface Settings {
-  appearance: { theme: "dark" | "light"; density: "cozy" | "compact"; fontSize: number };
+  appearance: { theme: "dark" | "light"; density: "cozy" | "compact"; fontSize: number; language: "auto" | "en" | "pt-BR" };
   editor: { lineNumbers: boolean; wordWrap: boolean; fontSize: number; autosaveDelay: number };
   files: { assetsFolder: string; ignoredFolders: string[]; dailyFolder: string; trashRetentionDays: number };
   board: { grid: boolean; snap: boolean; showConnections: boolean };

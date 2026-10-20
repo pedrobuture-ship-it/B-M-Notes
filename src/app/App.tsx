@@ -1,6 +1,6 @@
 import { useEffect, useRef } from "react";
 import { ReactFlowProvider } from "@xyflow/react";
-import { Network, X, LayoutDashboard } from "lucide-react";
+import { Network, X, LayoutDashboard, Clock3 } from "lucide-react";
 import { Header } from "@/features/shell/Header";
 import { Sidebar } from "@/features/sidebar/Sidebar";
 import { Board } from "@/features/board/Board";
@@ -21,6 +21,8 @@ import { ipc } from "@/lib/ipc";
 import { TemplateDialog } from "@/features/templates/TemplateDialog";
 import { HealthDialog } from "@/features/health/HealthDialog";
 import { PropertiesDialog } from "@/features/properties/PropertiesDialog";
+import { Timeline } from "@/features/timeline/Timeline";
+import { useTr } from "@/lib/i18n";
 import { TasksDialog } from "@/features/tasks/TasksDialog";
 import { TrashDialog } from "@/features/trash/TrashDialog";
 import { useAutoBackup } from "@/features/shell/useAutoBackup";
@@ -31,6 +33,7 @@ function MainArea() {
   const active = useUi((s) => s.activeNote);
   const setView = useUi((s) => s.setView);
   const closeNote = useUi((s) => s.closeNote);
+  const tr = useTr();
   const boardReady = useBoard((s) => s.ready);
   const activeBoard = useBoard((s) => s.activeId);
   return (
@@ -38,6 +41,7 @@ function MainArea() {
       <div className="main-tabs" role="tablist">
         <button role="tab" className="main-tab" aria-selected={view === "board"} onClick={() => setView("board")}><LayoutDashboard size={15} /><span className="label">Mural</span></button>
         <button role="tab" className="main-tab" aria-selected={view === "graph"} onClick={() => setView("graph")}><Network size={15} /><span className="label">Explore</span></button>
+        <button role="tab" className="main-tab" aria-selected={view === "timeline"} onClick={() => setView("timeline")}><Clock3 size={15} /><span className="label">{tr("Timeline")}</span></button>
         {active && (
           <div role="tab" className="main-tab" aria-selected={view === "note"} tabIndex={0} onClick={() => useUi.getState().openNote(active)} onKeyDown={(e) => e.key === "Enter" && useUi.getState().openNote(active)}>
             <span className="label">{basename(active)}</span>
@@ -50,6 +54,7 @@ function MainArea() {
       <div className="main-content">
         {view === "board" && (boardReady ? <Board key={activeBoard} /> : <div className="empty h-full"><p className="hand">Laying out the wall…</p></div>)}
         {view === "graph" && <GraphExplorer />}
+        {view === "timeline" && <Timeline />}
         {view === "note" && active && <NotePane path={active} />}
       </div>
     </div>
@@ -57,6 +62,7 @@ function MainArea() {
 }
 
 export function App() {
+  const zen = useUi((s) => s.zen);
   const info = useWorkspace((s) => s.info);
   const loading = useWorkspace((s) => s.loading);
   const openWorkspace = useWorkspace((s) => s.openWorkspace);
@@ -98,11 +104,11 @@ export function App() {
 
   return (
     <ReactFlowProvider>
-      <div className="app">
-        <Header />
+      <div className="app" data-zen={zen}>
+        {!zen && <Header />}
         {info ? (
           <div className="body">
-            {sidebarOpen && <Sidebar />}
+            {sidebarOpen && !zen && <Sidebar />}
             <MainArea />
           </div>
         ) : loading ? (

@@ -2,11 +2,13 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   Background, BackgroundVariant, ConnectionMode, Controls, MiniMap, ReactFlow, SelectionMode, applyEdgeChanges, applyNodeChanges, getViewportForBounds,
   useReactFlow, useStore, type Connection, type Edge, type EdgeChange, type Node, type NodeChange, type NodeTypes, type EdgeTypes,
+  ViewportPortal,
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
-import { BoxSelect, Copy, Lock, ExternalLink, FilePlus, Frame as FrameIcon, Maximize, Pencil, Trash2 } from "lucide-react";
+import { AlignCenterHorizontal, AlignCenterVertical, AlignEndHorizontal, AlignEndVertical, AlignHorizontalDistributeCenter, AlignStartHorizontal, AlignStartVertical, AlignVerticalDistributeCenter, BoxSelect, Copy, Lock, ExternalLink, FilePlus, Frame as FrameIcon, Maximize, Pencil, Trash2 } from "lucide-react";
 import { useBoard, MAIN_BOARD } from "@/stores/board";
 import { BoardTabs } from "./BoardTabs";
+import { alignRects, distributeRects, snapRect, type AlignMode, type Rect } from "@/lib/align";
 import { useWorkspace } from "@/stores/workspace";
 import { useSettings } from "@/stores/settings";
 import { useUi } from "@/stores/ui";
@@ -88,6 +90,8 @@ export function Board() {
   const [edges, setEdges] = useState<Edge[]>([]);
   const nodesRef = useRef<Node[]>([]);
   nodesRef.current = nodes;
+  const [guides, setGuides] = useState<{ x: number | null; y: number | null }>({ x: null, y: null });
+  const snapRef = useRef<{ id: string; x: number; y: number } | null>(null);
   const dragRef = useRef<{ frame: string; start: { x: number; y: number }; members: Map<string, { x: number; y: number }> } | null>(null);
 
   /** "Add to <mural>" for every extra mural, and "Remove from this mural" when one of them is on screen. */
@@ -239,6 +243,17 @@ export function Board() {
   );
 
   const onNodeDrag = useCallback((_: unknown, node: Node) => {
+    if (!node.id.startsWith(FRAME) && !nodesRef.current.some((n) => n.selected && n.id !== node.id)) {
+      // Magnetic guides: line the card up with the edges and centres of the others.
+      const rect = (n: Node): Rect => ({ id: n.id, x: n.position.x, y: n.position.y, w: n.measured?.width ?? n.width ?? CARD_W, h: n.measured?.height ?? n.height ?? CARD_H });
+      const s = snapRect(rect(node), nodesRef.current.filter((n) => n.id !== node.id).map(rect), 6 / Math.max(0.05, rf.getZoom()));
+      setGuides((g) => (g.x === s.guideX && g.y === s.guideY ? g : { x: s.guideX, y: s.guideY }));
+      if (s.dx || s.dy) {
+        const pos = { x: node.position.x + s.dx, y: node.position.y + s.dy };
+        snapRef.current = { id: node.id, ...pos };
+        setNodes((ns) => ns.map((n) => (n.id === node.id ? { ...n, position: pos } : n)));
+      } else snapRef.current = null;
+    }
     const d = dragRef.current;
     if (!d || d.frame !== node.id) return;
     const dx = node.position.x - d.start.x;
@@ -250,8 +265,12 @@ export function Board() {
     (_: unknown, node: Node, dragged: Node[]) => {
       const d = dragRef.current;
       dragRef.current = null;
+      setGuides({ x: null, y: null });
       const list = new Map<string, Node>();
       for (const n of dragged.length ? dragged : [node]) list.set(n.id, n);
+      const snapped = snapRef.current;
+      snapRef.current = null;
+      if (snapped && list.has(snapped.id)) list.set(snapped.id, { ...list.get(snapped.id)!, position: { x: snapped.x, y: snapped.y } });
       if (d && d.frame === node.id) {
         // Derive member positions from the frame's final position (the last drag tick may not be rendered yet).
         const dx = node.position.x - d.start.x;
@@ -384,6 +403,9 @@ export function Board() {
     return () => window.removeEventListener("keydown", key);
   }, [deleteSelection, selectedCards.length, selectedFrames.length, selectedEdges.length]);
 
+  const rectsOfSelection = (): Rect[] => selectedCards.map((n) => ({ id: n.id, x: n.position.x, y: n.position.y, w: n.measured?.width ?? n.width ?? CARD_W, h: n.measured?.height ?? n.height ?? CARD_H }));
+  const applyLayout = (res: Record<string, { x: number; y: number }>) => patchCards(res);
+
   const recolorSelection = (c: CardColor) => patchCards(Object.fromEntries(selectedCards.map((n) => [n.id, { color: c }])));
 
   return (
@@ -439,6 +461,12 @@ export function Board() {
         aria-label="Mural canvas"
       >
         {settings.grid && <Background variant={BackgroundVariant.Dots} gap={22} size={1.6} color={theme === "light" ? "rgb(90 65 20 / 0.2)" : "rgb(255 255 255 / 0.11)"} />}
+        {(guides.x !== null || guides.y !== null) && (
+          <ViewportPortal>
+            {guides.x !== null && <div className="snap-guide v" style={{ transform: `translate(${guides.x}px, -100000px)` }} />}
+            {guides.y !== null && <div className="snap-guide h" style={{ transform: `translate(-100000px, ${guides.y}px)` }} />}
+          </ViewportPortal>
+        )}
         <Controls showInteractive={false} position="bottom-left" />
         <MiniMap
           pannable
@@ -472,6 +500,16 @@ export function Board() {
         <div className="selection-bar" role="toolbar" aria-label="Selection actions">
           <span className="handwritten-label" style={{ fontSize: "1.25rem" }}><BoxSelect size={15} className="inline mr-1" />{selectedCards.length} notes</span>
           <Swatches onPick={recolorSelection} />
+          <div className="flex gap-1" role="group" aria-label="Align and distribute">
+            {([
+              ["left", AlignStartVertical, "Align left"], ["hcenter", AlignCenterVertical, "Center horizontally"], ["right", AlignEndVertical, "Align right"],
+              ["top", AlignStartHorizontal, "Align top"], ["vcenter", AlignCenterHorizontal, "Center vertically"], ["bottom", AlignEndHorizontal, "Align bottom"],
+            ] as [AlignMode, typeof AlignStartVertical, string][]).map(([mode, Icon, label]) => (
+              <button key={mode} className="btn btn-ghost btn-icon" onClick={() => applyLayout(alignRects(rectsOfSelection(), mode))} aria-label={label} data-tip={label}><Icon size={16} /></button>
+            ))}
+            <button className="btn btn-ghost btn-icon" disabled={selectedCards.length < 3} onClick={() => applyLayout(distributeRects(rectsOfSelection(), "x"))} aria-label="Distribute horizontally" data-tip="Distribute horizontally"><AlignHorizontalDistributeCenter size={16} /></button>
+            <button className="btn btn-ghost btn-icon" disabled={selectedCards.length < 3} onClick={() => applyLayout(distributeRects(rectsOfSelection(), "y"))} aria-label="Distribute vertically" data-tip="Distribute vertically"><AlignVerticalDistributeCenter size={16} /></button>
+          </div>
           <button className="btn" onClick={() => void groupInFrame()}><FrameIcon size={15} /> Group in frame</button>
           <button className="btn btn-danger" onClick={() => void deleteSelection()}><Trash2 size={15} /> Delete</button>
         </div>

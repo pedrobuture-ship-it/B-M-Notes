@@ -1,6 +1,6 @@
 export type ActionId =
   | "palette" | "search" | "newNote" | "templates" | "daily" | "togglePreview" | "sidebar" | "settings" | "shortcuts"
-  | "back" | "forward" | "fit" | "zoomIn" | "zoomOut";
+  | "back" | "forward" | "zen" | "fit" | "zoomIn" | "zoomOut";
 
 export interface ActionDef {
   id: ActionId;
@@ -22,6 +22,7 @@ export const ACTIONS: ActionDef[] = [
   { id: "shortcuts", label: "Keyboard shortcuts", default: "Ctrl+/" },
   { id: "back", label: "Back", default: "Alt+ArrowLeft" },
   { id: "forward", label: "Forward", default: "Alt+ArrowRight" },
+  { id: "zen", label: "Focus mode", default: "Ctrl+Shift+F" },
   { id: "fit", label: "Fit board", default: "Ctrl+0" },
   { id: "zoomIn", label: "Zoom in", default: "Ctrl+=" },
   { id: "zoomOut", label: "Zoom out", default: "Ctrl+-" },
@@ -85,6 +86,7 @@ export const SHORTCUTS: ShortcutDef[] = [
   act("shortcuts"),
   act("back"),
   act("forward"),
+  act("zen"),
   { keys: "Esc", label: "Close dialog / leave card editing", group: "General" },
   { keys: "Double-click canvas", label: "Create a note at that spot", group: "Mural" },
   { keys: "Double-click card", label: "Edit the note in place", group: "Mural" },

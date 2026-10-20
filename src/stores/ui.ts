@@ -1,7 +1,7 @@
 import { create } from "zustand";
 
 export type SidebarTab = "notes" | "tags" | "files" | "explore";
-export type MainView = "board" | "graph" | "note";
+export type MainView = "board" | "graph" | "note" | "timeline";
 export type NoteMode = "edit" | "preview" | "split";
 export type DialogName = "palette" | "search" | "shortcuts" | "settings" | "about" | "trash" | "templates" | "tasks" | "properties" | "health" | null;
 
@@ -74,6 +74,8 @@ interface UiState {
   /** Query to open the search dialog with (saved searches). */
   searchPrefill: string | null;
   navRoot: string;
+  /** Focus mode: only the current view, no header or sidebar. */
+  zen: boolean;
   history: NavEntry[];
   histIdx: number;
   recent: string[];
@@ -94,6 +96,7 @@ interface UiState {
   setDialog: (d: DialogName) => void;
   openSettings: (section: string) => void;
   setPendingHeading: (h: string | null) => void;
+  setZen: (v: boolean) => void;
   openSearch: (query: string) => void;
   /** Starts a fresh navigation history for a (re)opened workspace. */
   resetNav: (root: string) => void;
@@ -152,6 +155,7 @@ export const useUi = create<UiState>((set, get) => {
   pendingHeading: null,
   searchPrefill: null,
   navRoot: "",
+  zen: false,
   history: [{ view: "board", note: null }],
   histIdx: 0,
   recent: [],
@@ -187,6 +191,7 @@ export const useUi = create<UiState>((set, get) => {
   setDialog: (dialog) => set({ dialog }),
   openSettings: (settingsSection) => set({ settingsSection, dialog: "settings" }),
   setPendingHeading: (pendingHeading) => set({ pendingHeading }),
+  setZen: (zen) => set({ zen }),
   openSearch: (query) => set({ searchPrefill: query, dialog: "search" }),
   resetNav: (root) => set({ navRoot: root, history: [{ view: "board", note: null }], histIdx: 0, recent: root ? loadRecent(root) : [] }),
   goBack: () => step(-1),

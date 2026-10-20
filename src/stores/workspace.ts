@@ -14,6 +14,7 @@ export interface NoteState {
   content: string;
   saved: string;
   mtime: number;
+  created: number;
   /** Bumped when content is replaced from outside the editor (disk reload). */
   revision: number;
   /** External content waiting for the user's decision when there are unsaved local edits. */
@@ -83,7 +84,7 @@ function flattenPaths(nodes: TreeNode[], out: string[] = []): string[] {
   return out;
 }
 
-const toState = (f: NoteFile): NoteState => ({ content: f.content, saved: f.content, mtime: f.mtime, revision: 0, conflict: null });
+const toState = (f: NoteFile): NoteState => ({ content: f.content, saved: f.content, mtime: f.mtime, created: f.created ?? f.mtime, revision: 0, conflict: null });
 
 export const useWorkspace = create<WorkspaceState>((set, get) => {
   const errorToast = (e: unknown) => useUi.getState().toast(e instanceof Error ? e.message : String(e), "error");
@@ -365,7 +366,7 @@ export const useWorkspace = create<WorkspaceState>((set, get) => {
             continue;
           } else {
             set((s) => ({
-              notes: { ...s.notes, [p]: { content: f.content, saved: f.content, mtime: f.mtime, revision: cur.revision + 1, conflict: null } },
+              notes: { ...s.notes, [p]: { content: f.content, saved: f.content, mtime: f.mtime, created: cur.created, revision: cur.revision + 1, conflict: null } },
             }));
           }
           scheduleIndex(p);
@@ -386,7 +387,7 @@ export const useWorkspace = create<WorkspaceState>((set, get) => {
         const ext = n.conflict;
         clearTimeout(saveTimers.get(path));
         saveTimers.delete(path);
-        set((s) => ({ notes: { ...s.notes, [path]: { content: ext, saved: ext, mtime: n.mtime, revision: n.revision + 1, conflict: null } } }));
+        set((s) => ({ notes: { ...s.notes, [path]: { content: ext, saved: ext, mtime: n.mtime, created: n.created, revision: n.revision + 1, conflict: null } } }));
         scheduleIndex(path);
         refreshStatus();
       }

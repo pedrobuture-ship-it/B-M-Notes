@@ -22,6 +22,17 @@ pub struct NoteFile {
     pub path: String,
     pub content: String,
     pub mtime: u64,
+    /// Creation time when the filesystem records it, otherwise the modification time.
+    pub created: u64,
+}
+
+fn created_ms(p: &Path) -> u64 {
+    fs::metadata(p)
+        .and_then(|m| m.created())
+        .ok()
+        .and_then(|t| t.duration_since(UNIX_EPOCH).ok())
+        .map(|d| d.as_millis() as u64)
+        .unwrap_or_else(|| mtime_ms(p))
 }
 
 fn mtime_ms(p: &Path) -> u64 {
@@ -91,7 +102,7 @@ pub fn read_all(root: &Path, ignored: &[String]) -> Result<Vec<NoteFile>, String
         let abs = root.join(&rel);
         // Unreadable / non-UTF8 files are skipped rather than failing the whole load.
         if let Ok(content) = fs::read_to_string(&abs) {
-            out.push(NoteFile { mtime: mtime_ms(&abs), path: rel, content });
+            out.push(NoteFile { mtime: mtime_ms(&abs), created: created_ms(&abs), path: rel, content });
         }
     }
     Ok(out)
@@ -100,7 +111,7 @@ pub fn read_all(root: &Path, ignored: &[String]) -> Result<Vec<NoteFile>, String
 pub fn read_note(root: &Path, rel: &str) -> Result<NoteFile, String> {
     let abs = safe_join(root, rel)?;
     let content = fs::read_to_string(&abs).map_err(|e| format!("{rel}: {e}"))?;
-    Ok(NoteFile { path: rel.to_string(), mtime: mtime_ms(&abs), content })
+    Ok(NoteFile { path: rel.to_string(), mtime: mtime_ms(&abs), created: created_ms(&abs), content })
 }
 
 /// Atomic write: temp file in the same dir, fsync, rename over the target.

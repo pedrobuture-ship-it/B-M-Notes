@@ -113,3 +113,6 @@
 .board-tab-x:hover { opacity: 1; color: var(--red); }
 .board-tab-add { padding: 4px 8px; border-radius: 10px; color: var(--ink-dim); border: 2px dashed var(--line); }
 .board-tab-add:hover { color: var(--amber); border-color: var(--amber); }
+.snap-guide { position: absolute; pointer-events: none; background: var(--amber); opacity: 0.75; }
+.snap-guide.v { width: 1px; height: 200000px; }
+.snap-guide.h { height: 1px; width: 200000px; }
