@@ -69,7 +69,7 @@
 .edge-label { position: absolute; transform: translate(-50%, -50%); pointer-events: all; font-family: var(--font-hand); font-weight: 700; font-size: 1.2rem; line-height: 1; padding: 1px 8px 3px; color: var(--paper-ink); background: var(--card-yellow); border-radius: 2px 4px 2px 4px; box-shadow: 1px 2px 4px rgb(0 0 0 / 0.5); animation: pop-in 0.2s var(--ease); }
 .edge-toolbar { position: absolute; transform: translate(-50%, 10px); pointer-events: all; display: flex; flex-wrap: wrap; gap: 4px; padding: 6px; max-width: 280px; justify-content: center; background: var(--surface); border: 2px solid var(--line); border-radius: 10px 14px 10px 14px; box-shadow: var(--shadow-lift); z-index: 20; }
 
-.board-hud { position: absolute; top: 12px; left: 12px; z-index: 5; display: flex; gap: 8px; align-items: center; flex-wrap: wrap; max-width: calc(100% - 24px); }
+.board-hud { position: absolute; top: 54px; left: 12px; z-index: 5; display: flex; gap: 8px; align-items: center; flex-wrap: wrap; max-width: calc(100% - 24px); }
 .board-hint { position: absolute; inset: 0; display: grid; place-items: center; pointer-events: none; z-index: 2; }
 .selection-bar { position: absolute; bottom: 18px; left: 50%; transform: translateX(-50%); z-index: 6; display: flex; align-items: center; gap: 8px; padding: 6px 10px; background: var(--surface); border: 2px solid var(--amber); border-radius: 12px 16px 12px 16px; box-shadow: var(--shadow-lift); animation: pop-in 0.18s var(--ease); }
 
@@ -102,3 +102,14 @@
 .note-lod span { font-family: var(--font-hand); font-weight: 700; font-size: 2.4rem; line-height: 1; overflow-wrap: anywhere; }
 .note-lod.paper-card { background-image: none; background-blend-mode: normal; box-shadow: 0 1px 2px rgb(0 0 0 / 0.5); }
 .note-lod .tape { display: none; }
+
+/* mural tabs */
+.board-tabs { position: absolute; z-index: 5; left: 12px; top: 10px; display: flex; align-items: center; gap: 4px; max-width: 60%; overflow-x: auto; }
+.board-tab { display: flex; align-items: center; background: var(--surface); border: 2px solid var(--line-soft); border-radius: 10px 14px 10px 14px; }
+.board-tab[data-active="true"] { border-color: var(--amber); background: var(--surface-3); }
+.board-tab-name { padding: 3px 12px; font-family: var(--font-hand); font-size: 1.1rem; font-weight: 700; color: var(--ink-dim); white-space: nowrap; }
+.board-tab[data-active="true"] .board-tab-name { color: var(--ink); }
+.board-tab-x { padding: 0 6px 0 0; color: var(--ink-faint); opacity: 0.6; }
+.board-tab-x:hover { opacity: 1; color: var(--red); }
+.board-tab-add { padding: 4px 8px; border-radius: 10px; color: var(--ink-dim); border: 2px dashed var(--line); }
+.board-tab-add:hover { color: var(--amber); border-color: var(--amber); }

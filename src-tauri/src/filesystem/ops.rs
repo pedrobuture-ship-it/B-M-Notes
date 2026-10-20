@@ -228,11 +228,17 @@ pub fn save_asset(root: &Path, assets_dir: &str, file_name: &str, bytes: &[u8]) 
 
 const MAX_BACKUPS: usize = 8;
 
-const META_FILES: [&str; 3] = ["board.json", "settings.json", "board.corrupt.json"];
+const META_FILES: [&str; 4] = ["board.json", "settings.json", "board.corrupt.json", "boards.json"];
+
+/// `boards/<id>.json` with a simple lowercase id, for the extra murals of a workspace.
+fn is_board_file(file: &str) -> bool {
+    let Some(id) = file.strip_prefix("boards/").and_then(|f| f.strip_suffix(".json")) else { return false };
+    !id.is_empty() && id.len() <= 40 && id.chars().next().is_some_and(|c| c.is_ascii_alphanumeric()) && id.chars().all(|c| c.is_ascii_lowercase() || c.is_ascii_digit() || c == '-')
+}
 
 /// `.mural/<file>` for a whitelisted metadata file; `.mural` itself may not be a symlink out of the workspace.
 fn meta_path(root: &Path, file: &str) -> Result<std::path::PathBuf, String> {
-    if !META_FILES.contains(&file) {
+    if !META_FILES.contains(&file) && !is_board_file(file) {
         return Err("Unknown metadata file".into());
     }
     safe_join(root, &format!("{MURAL_DIR}/{file}"))
@@ -243,6 +249,18 @@ pub fn read_meta(root: &Path, file: &str) -> Result<Option<String>, String> {
     match fs::read_to_string(&abs) {
         Ok(s) => Ok(Some(s)),
         Err(e) if e.kind() == std::io::ErrorKind::NotFound => Ok(None),
+        Err(e) => Err(e.to_string()),
+    }
+}
+
+/// Deletes an extra mural's file (`boards/<id>.json`). The main board and settings can't be deleted this way.
+pub fn delete_meta(root: &Path, file: &str) -> Result<(), String> {
+    if !is_board_file(file) {
+        return Err("Only extra murals can be deleted".into());
+    }
+    match fs::remove_file(meta_path(root, file)?) {
+        Ok(()) => Ok(()),
+        Err(e) if e.kind() == std::io::ErrorKind::NotFound => Ok(()),
         Err(e) => Err(e.to_string()),
     }
 }
@@ -373,6 +391,21 @@ mod tests {
         assert_eq!(latest_board_backup(&root).unwrap(), "{\"v\":1}");
         assert!(write_meta(&root, "../evil.json", "x").is_err());
         assert!(read_meta(&root, "../../etc/passwd").is_err());
+    }
+
+    #[test]
+    fn extra_boards_are_whitelisted_and_deletable() {
+        let (_t, root) = setup();
+        write_meta(&root, "boards/study-2.json", "{}").unwrap();
+        write_meta(&root, "boards.json", "{}").unwrap();
+        assert_eq!(read_meta(&root, "boards/study-2.json").unwrap().as_deref(), Some("{}"));
+        for bad in ["boards/../x.json", "boards/A.json", "boards/-x.json", "boards/a/b.json", "boards/.json", "boards/x.md"] {
+            assert!(write_meta(&root, bad, "{}").is_err(), "{bad}");
+        }
+        delete_meta(&root, "boards/study-2.json").unwrap();
+        assert!(read_meta(&root, "boards/study-2.json").unwrap().is_none());
+        assert!(delete_meta(&root, "board.json").is_err());
+        assert!(delete_meta(&root, "boards.json").is_err());
     }
 
     #[test]

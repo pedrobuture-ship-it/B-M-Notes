@@ -20,6 +20,7 @@ vi.mock("@/lib/ipc", () => ({
     readMeta: async (file: string) => ({ content: meta.get(file) ?? null, backup: file === "board.json" ? backup : null }),
     writeMeta: async (file: string, content: string) => void meta.set(file, content),
     onFsChange: async () => () => {},
+    deleteMeta: async (file: string) => void meta.delete(file),
     rename: async (path: string, newName: string) => {
       const next = newName;
       files.set(next, files.get(path) ?? "");
@@ -138,5 +139,31 @@ describe("smart rename", () => {
     expect(await useWorkspace.getState().renameEntry("c.md", "d.md")).toBeNull();
     expect(files.has("c.md")).toBe(true);
     choose.mockRestore();
+  });
+});
+
+describe("multiple murals", () => {
+  it("keeps extra murals curated and drops notes from all of them on delete", async () => {
+    const { useBoard: B } = await import("./board");
+    await useWorkspace.getState().openWorkspace("/w");
+    expect(B.getState().boards.map((b) => b.id)).toEqual(["main"]);
+    const paths = () => Object.keys(useWorkspace.getState().notes);
+    const id = await B.getState().createBoard("Study Plan", false, paths());
+    expect(id).toBe("study-plan");
+    expect(B.getState().activeId).toBe("study-plan");
+    expect(Object.keys(B.getState().board.cards)).toEqual([]);
+    // Notes are not added automatically to an extra mural.
+    B.getState().syncPaths(paths());
+    expect(Object.keys(B.getState().board.cards)).toEqual([]);
+    await B.getState().addToBoard("study-plan", "a.md");
+    expect(Object.keys(B.getState().board.cards)).toEqual(["a.md"]);
+    // Removing from this mural leaves the other one alone.
+    B.getState().removePaths("a.md", false);
+    expect(Object.keys(B.getState().board.cards)).toEqual([]);
+    await B.getState().switchBoard("main", paths());
+    expect(Object.keys(B.getState().board.cards).sort()).toEqual(["a.md", "b.md"]);
+    expect(JSON.parse(meta.get("boards.json") ?? "{}").boards).toEqual([{ id: "study-plan", name: "Study Plan" }]);
+    await B.getState().deleteBoard("study-plan", paths());
+    expect(B.getState().boards.map((b) => b.id)).toEqual(["main"]);
   });
 });

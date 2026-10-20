@@ -184,7 +184,7 @@ export const useWorkspace = create<WorkspaceState>((set, get) => {
         const notes: Record<string, NoteState> = {};
         for (const f of files) notes[f.path] = toState(f);
         set({ info, tree, notes, index: buildIndex(files.map((f) => [f.path, f.content])), loading: false, saveStatus: "idle" });
-        await useBoard.getState().load(Object.keys(notes));
+        await useBoard.getState().load(Object.keys(notes), info.root);
         const ui = useUi.getState();
         ui.setView("board");
         useUi.setState({ activeNote: null, tagFilter: null });

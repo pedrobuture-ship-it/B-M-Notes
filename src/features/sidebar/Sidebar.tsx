@@ -2,6 +2,7 @@ import { useMemo, useState } from "react";
 import { ChevronRight, FileText, FilePlus, Folder, FolderOpen, FolderPlus, Hash, Network, StickyNote, Trash2, X } from "lucide-react";
 import { useWorkspace } from "@/stores/workspace";
 import { useUi, type SidebarTab } from "@/stores/ui";
+import { useBoard, MAIN_BOARD } from "@/stores/board";
 import { Menu, useContextMenu, type MenuEntry } from "@/components/Menu";
 import { EmptyFiles, EmptyTags } from "@/components/doodles";
 import { VirtualList } from "@/components/VirtualList";
@@ -265,6 +266,7 @@ function TreeRow({ node, depth, expanded: isOpen, toggle, expand, openMenu }: It
         { label: "Open", onSelect: () => openNote(node.path) },
         { label: "Rename", onSelect: () => void renameEntry(node.path, false) },
         { label: "Move to…", onSelect: () => void promptMove(node.path) },
+        ...useBoard.getState().boards.filter((b) => b.id !== MAIN_BOARD).map((b) => ({ label: `Add to mural: ${b.name}`, onSelect: () => void useBoard.getState().addToBoard(b.id, node.path) })),
         { label: "Reveal in file manager", onSelect: () => void revealInFolder(node.path) },
         { label: "Copy path", onSelect: () => void copyPath(node.path) },
         { separator: true },

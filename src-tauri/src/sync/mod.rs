@@ -14,6 +14,11 @@ const IGNORE_LINES: [&str; 5] = [".mural/settings.json", ".mural/sync.json", ".m
 const LARGE_FILE: u64 = 10 * 1024 * 1024;
 const BOARD: &str = ".mural/board.json";
 
+/// Board layout files that merge per card: the main mural, the extra murals and their index.
+fn is_board_path(p: &str) -> bool {
+    p == BOARD || p == ".mural/boards.json" || (p.starts_with(".mural/boards/") && p.ends_with(".json"))
+}
+
 #[derive(Serialize, Default, Clone, Debug)]
 #[serde(rename_all = "camelCase")]
 pub struct SyncState {
@@ -194,16 +199,15 @@ impl Git {
         }
     }
 
-    /// Resolves board.json automatically (per-card merge); anything else stays a conflict.
+    /// Resolves board layout files automatically (per-card merge); anything else stays a conflict.
     fn auto_resolve_board(&self) {
-        if !self.conflicts().iter().any(|c| c == BOARD) {
-            return;
-        }
-        let show = |stage: u8| self.run(&["show", &format!(":{stage}:{BOARD}")]).ok();
-        let merged = board_merge::merge_board(show(1).as_deref(), show(2).as_deref(), show(3).as_deref());
-        if let Some(text) = merged {
-            if std::fs::write(self.root.join(BOARD), text).is_ok() {
-                let _ = self.run(&["add", "--", BOARD]);
+        for path in self.conflicts().into_iter().filter(|c| is_board_path(c)) {
+            let show = |stage: u8| self.run(&["show", &format!(":{stage}:{path}")]).ok();
+            let merged = board_merge::merge_board(show(1).as_deref(), show(2).as_deref(), show(3).as_deref());
+            if let Some(text) = merged {
+                if std::fs::write(self.root.join(&path), text).is_ok() {
+                    let _ = self.run(&["add", "--", &path]);
+                }
             }
         }
     }

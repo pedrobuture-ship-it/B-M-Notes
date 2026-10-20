@@ -77,6 +77,7 @@ pub fn run() {
             commands::absolute_path,
             commands::read_meta,
             commands::write_meta,
+            commands::delete_meta,
             commands::launch_path,
             github::github_login_start,
             github::github_login_poll,

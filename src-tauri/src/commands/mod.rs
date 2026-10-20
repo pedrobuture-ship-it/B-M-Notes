@@ -145,6 +145,11 @@ pub fn read_meta(state: State<'_, AppState>, file: String) -> Res<MetaRead> {
 }
 
 #[tauri::command]
+pub fn delete_meta(state: State<'_, AppState>, file: String) -> Res<()> {
+    ops::delete_meta(&state.root()?, &file)
+}
+
+#[tauri::command]
 pub fn write_meta(state: State<'_, AppState>, file: String, content: String) -> Res<()> {
     ops::write_meta(&state.root()?, &file, &content)
 }

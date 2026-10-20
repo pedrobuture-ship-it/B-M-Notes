@@ -27,6 +27,7 @@ function MainArea() {
   const setView = useUi((s) => s.setView);
   const closeNote = useUi((s) => s.closeNote);
   const boardReady = useBoard((s) => s.ready);
+  const activeBoard = useBoard((s) => s.activeId);
   return (
     <div className="main">
       <div className="main-tabs" role="tablist">
@@ -42,7 +43,7 @@ function MainArea() {
         <div className="pb-1.5 pr-1"><SaveIndicator /></div>
       </div>
       <div className="main-content">
-        {view === "board" && (boardReady ? <Board /> : <div className="empty h-full"><p className="hand">Laying out the wall…</p></div>)}
+        {view === "board" && (boardReady ? <Board key={activeBoard} /> : <div className="empty h-full"><p className="hand">Laying out the wall…</p></div>)}
         {view === "graph" && <GraphExplorer />}
         {view === "note" && active && <NotePane path={active} />}
       </div>

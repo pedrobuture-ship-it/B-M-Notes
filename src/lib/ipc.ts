@@ -92,6 +92,7 @@ export const ipc = {
   readMeta: (file: string) => call<MetaRead>("read_meta", { file }),
   launchPath: () => call<string | null>("launch_path"),
   writeMeta: (file: string, content: string) => call<void>("write_meta", { file, content }),
+  deleteMeta: (file: string) => call<void>("delete_meta", { file }),
   reveal: async (path: string) => revealItemInDir(await call<string>("absolute_path", { path })),
   copyPath: async (path: string) => {
     await navigator.clipboard.writeText(await call<string>("absolute_path", { path }));

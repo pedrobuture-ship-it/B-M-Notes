@@ -5,7 +5,8 @@ import {
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
 import { BoxSelect, Copy, ExternalLink, FilePlus, Frame as FrameIcon, Maximize, Pencil, Trash2 } from "lucide-react";
-import { useBoard } from "@/stores/board";
+import { useBoard, MAIN_BOARD } from "@/stores/board";
+import { BoardTabs } from "./BoardTabs";
 import { useWorkspace } from "@/stores/workspace";
 import { useSettings } from "@/stores/settings";
 import { useUi } from "@/stores/ui";
@@ -88,6 +89,15 @@ export function Board() {
   nodesRef.current = nodes;
   const dragRef = useRef<{ frame: string; start: { x: number; y: number }; members: Map<string, { x: number; y: number }> } | null>(null);
 
+  /** "Add to <mural>" for every extra mural, and "Remove from this mural" when one of them is on screen. */
+  const boardEntries = (path: string): MenuEntry[] => {
+    const st = useBoard.getState();
+    const others = st.boards.filter((b) => b.id !== MAIN_BOARD && b.id !== st.activeId);
+    const out: MenuEntry[] = others.map((b) => ({ label: `Add to mural: ${b.name}`, onSelect: () => void st.addToBoard(b.id, path) }));
+    if (st.activeId !== MAIN_BOARD) out.push({ label: "Remove from this mural", onSelect: () => st.removePaths(path, false) });
+    return out.length ? [...out, { separator: true }] : [];
+  };
+
   const showMenu = useCallback(
     (path: string, x: number, y: number) => {
       const color = useBoard.getState().board.cards[path]?.color;
@@ -98,6 +108,7 @@ export function Board() {
         { label: "Color", heading: true },
         { custom: <Swatches current={color} onPick={(c) => { patchCards({ [path]: { color: c } }); close(); }} /> },
         { separator: true },
+        ...boardEntries(path),
         { label: "Duplicate", icon: <Copy size={15} />, onSelect: () => void duplicateNote(path) },
         { label: "Reveal file", onSelect: () => void revealInFolder(path) },
         { label: "Copy path", onSelect: () => void copyPath(path) },
@@ -337,6 +348,12 @@ export function Board() {
     }
     selectedFrames.forEach((n) => removeFrame(n.id.slice(FRAME.length)));
     if (selectedCards.length === 0) return;
+    // On an extra mural, Delete only takes the card off the mural; the note files are never touched.
+    if (useBoard.getState().activeId !== MAIN_BOARD) {
+      selectedCards.forEach((n) => useBoard.getState().removePaths(n.id, false));
+      useUi.getState().toast("Removed from this mural. The notes are still in your folder.", "info");
+      return;
+    }
     const ui = useUi.getState();
     const ok = await ui.confirm({
       title: selectedCards.length > 1 ? `Delete ${selectedCards.length} notes?` : "Delete note?",
@@ -430,6 +447,8 @@ export function Board() {
           nodeColor={(n) => (n.type === "frame" ? "transparent" : (MINIMAP_COLORS[(n.data as NoteNodeData).color] ?? "#ece3cf"))}
         />
       </ReactFlow>
+
+      <BoardTabs />
 
       <div className="board-hud">
         <button className="btn" onClick={() => void rf.fitView({ duration: 350, padding: 0.15 })} data-tip="Fit board (Ctrl+0)"><Maximize size={15} /> Fit</button>
