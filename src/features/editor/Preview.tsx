@@ -8,8 +8,28 @@ import { useWorkspace } from "@/stores/workspace";
 const cache = new Map<string, string>();
 const CACHE_MAX = 400;
 
-function cachedRender(path: string, content: string, interactive: boolean, resolveStamp: number): string {
-  const key = `${path}\u0000${interactive ? 1 : 0}\u0000${resolveStamp}\u0000${content}`;
+const EMBEDS = /!\[\[([^[\]\n|#]+)/g;
+
+/** Text of every note this one embeds (one level), so edits to an embedded note refresh the embed. */
+function embedStamp(content: string): string {
+  if (!content.includes("![[")) return "";
+  const { notes } = useWorkspace.getState();
+  let out = "";
+  for (const m of content.matchAll(EMBEDS)) {
+    const p = resolveWikiTarget((m[1] ?? "").trim());
+    out += `${p ?? ""}:${(p && notes[p]?.content) || ""}\u0001`;
+  }
+  return out;
+}
+
+function embedLookup(target: string): { path: string; content: string } | null {
+  const p = resolveWikiTarget(target);
+  const n = p ? useWorkspace.getState().notes[p] : undefined;
+  return p && n ? { path: p, content: n.content } : null;
+}
+
+function cachedRender(path: string, content: string, interactive: boolean, resolveStamp: number, embeds: boolean): string {
+  const key = `${path}\u0000${interactive ? 1 : 0}\u0000${resolveStamp}\u0000${content}\u0000${embeds ? embedStamp(content) : ""}`;
   const hit = cache.get(key);
   if (hit !== undefined) {
     cache.delete(key);
@@ -18,7 +38,7 @@ function cachedRender(path: string, content: string, interactive: boolean, resol
   }
   let html: string;
   try {
-    html = renderMarkdown(content, { notePath: path, interactiveTasks: interactive, resolves: (t) => resolveWikiTarget(t) !== null });
+    html = renderMarkdown(content, { notePath: path, interactiveTasks: interactive, resolves: (t) => resolveWikiTarget(t) !== null, embed: embeds ? embedLookup : undefined });
   } catch {
     html = `<pre>${content.replace(/[&<>]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;" })[c] ?? c)}</pre>`;
   }
@@ -31,16 +51,20 @@ interface Props {
   path: string;
   content: string;
   interactive?: boolean;
+  /** Expand `![[note]]` embeds (note pages do; cards keep them as links). */
+  embeds?: boolean;
   className?: string;
   /** Called for clicks that aren't links/checkboxes (cards use it for selection). */
   onPlainClick?: (e: MouseEvent) => void;
 }
 
 /** Rendered Markdown. Wiki links open notes; task checkboxes edit the real file. */
-export const Preview = memo(function Preview({ path, content, interactive = true, className = "", onPlainClick }: Props) {
+export const Preview = memo(function Preview({ path, content, interactive = true, embeds = false, className = "", onPlainClick }: Props) {
   // Re-render when notes are created/deleted so missing/existing wiki links update.
   const stamp = useWorkspace((s) => s.index.meta.size);
-  const html = useMemo(() => cachedRender(path, content, interactive, stamp), [path, content, interactive, stamp]);
+  // Embedded notes are looked up in the store at render time, so edits to them must re-render this note.
+  const embedded = useWorkspace((s) => (embeds && content.includes("![[") ? s.notes : null));
+  const html = useMemo(() => cachedRender(path, content, interactive, stamp, embeds), [path, content, interactive, stamp, embeds, embedded]);
 
   const onClick = (e: MouseEvent<HTMLDivElement>) => {
     const target = e.target as HTMLElement;
@@ -61,7 +85,7 @@ export const Preview = memo(function Preview({ path, content, interactive = true
       e.preventDefault();
       const wiki = a.dataset.wiki;
       const href = a.getAttribute("href") ?? "";
-      if (wiki) void openWikiLink(wiki);
+      if (wiki) void openWikiLink(wiki, a.dataset.headingTarget);
       else if (/^(https?:|mailto:)/i.test(href)) void ipc.openExternal(href);
       return;
     }

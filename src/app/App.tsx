@@ -18,6 +18,8 @@ import { useBoard } from "@/stores/board";
 import { useUi } from "@/stores/ui";
 import { basename } from "@/lib/paths";
 import { ipc } from "@/lib/ipc";
+import { TemplateDialog } from "@/features/templates/TemplateDialog";
+import { TasksDialog } from "@/features/tasks/TasksDialog";
 import { TrashDialog } from "@/features/trash/TrashDialog";
 import { useAutoSync } from "@/features/shell/useAutoSync";
 
@@ -111,6 +113,8 @@ export function App() {
       {dialog === "shortcuts" && <ShortcutsDialog />}
       {dialog === "about" && <AboutDialog />}
       {info && dialog === "trash" && <TrashDialog />}
+      {info && dialog === "templates" && <TemplateDialog />}
+      {info && dialog === "tasks" && <TasksDialog />}
       <ConfirmDialog />
       <ChoiceDialog />
       <PromptDialog />

@@ -1,4 +1,6 @@
 import { useEffect, useRef } from "react";
+import { autocompletion } from "@codemirror/autocomplete";
+import { wikiCompletions } from "./wikiComplete";
 import { Compartment, EditorSelection, EditorState } from "@codemirror/state";
 import { EditorView, drawSelection, highlightActiveLine, keymap, lineNumbers, placeholder } from "@codemirror/view";
 import { defaultKeymap, history, historyKeymap, indentWithTab } from "@codemirror/commands";
@@ -124,11 +126,13 @@ interface Props {
   autoFocus?: boolean;
   onEscape?: () => void;
   placeholderText?: string;
+  /** Moves the cursor to this zero-based line and scrolls it into view. `nonce` lets the same line be requested again. */
+  scrollToLine?: { line: number; nonce: number } | null;
 }
 
 const sizeTheme = (px: number) => EditorView.theme({ ".cm-scroller": { fontSize: `${px}px` } });
 
-export function MarkdownEditor({ docKey, value, revision, onChange, options, compact, autoFocus, onEscape, placeholderText }: Props) {
+export function MarkdownEditor({ docKey, value, revision, onChange, options, compact, autoFocus, onEscape, placeholderText, scrollToLine }: Props) {
   const host = useRef<HTMLDivElement>(null);
   const viewRef = useRef<EditorView | null>(null);
   const onChangeRef = useRef(onChange);
@@ -173,6 +177,7 @@ export function MarkdownEditor({ docKey, value, revision, onChange, options, com
           indentOnInput(),
           markdown({ base: markdownLanguage, codeLanguages: languages }),
           syntaxHighlighting(highlight),
+          autocompletion({ override: [wikiCompletions], icons: false, maxRenderedOptions: 60 }),
           baseTheme,
           compact ? compactTheme : [],
           placeholderText ? placeholder(placeholderText) : [],
@@ -240,6 +245,14 @@ export function MarkdownEditor({ docKey, value, revision, onChange, options, com
       ],
     });
   }, [options.lineNumbers, options.wordWrap, options.fontSize]);
+
+  useEffect(() => {
+    const view = viewRef.current;
+    if (!view || !scrollToLine) return;
+    const line = view.state.doc.line(Math.min(view.state.doc.lines, Math.max(1, scrollToLine.line + 1)));
+    view.dispatch({ selection: { anchor: line.from }, effects: EditorView.scrollIntoView(line.from, { y: "start", yMargin: 24 }) });
+    view.focus();
+  }, [scrollToLine]);
 
   // External replacement (disk reload / conflict resolution).
   useEffect(() => {

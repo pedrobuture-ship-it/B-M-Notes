@@ -5,6 +5,7 @@ import { useBoard } from "@/stores/board";
 import { removeWikiLinks } from "./markdownText";
 import { basename, dirname, stripExt } from "./paths";
 import { slugify } from "./slug";
+import { slugHeading } from "./headings";
 import { ipc } from "./ipc";
 
 export function resolveWikiTarget(target: string): string | null {
@@ -25,11 +26,12 @@ export function removeEdge(id: string, source: string, target: string): void {
 }
 
 /** Opens a wiki link; offers to create the note when it does not exist yet. */
-export async function openWikiLink(target: string): Promise<void> {
+export async function openWikiLink(target: string, heading?: string): Promise<void> {
   const ui = useUi.getState();
   const existing = resolveWikiTarget(target);
   if (existing) {
     ui.openNote(existing);
+    if (heading) ui.setPendingHeading(slugHeading(heading));
     return;
   }
   const clean = target.replace(/^\/+/, "").replace(/\.md$/i, "");

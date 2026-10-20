@@ -121,3 +121,7 @@
 .snippet { color: var(--ink-faint); font-size: 0.88em; display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
 .shortcut-row { display: flex; align-items: center; justify-content: space-between; padding: 5px 0; border-bottom: 1.5px dotted var(--line-soft); }
+
+.props-bar { display: flex; flex-wrap: wrap; gap: 6px; padding: 6px 16px; border-bottom: 2px dashed var(--line-soft); }
+.md-prose .embed { border-left: 4px solid var(--amber); background: rgb(217 164 65 / 0.08); border-radius: 3px 8px 3px 8px; padding: 4px 14px; margin: 10px 0; }
+.md-prose .embed > p:first-child { font-size: 0.85em; opacity: 0.85; margin: 2px 0 4px; }

@@ -1,9 +1,12 @@
-import { useMemo } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { ArrowLeft, Link2, Check, CircleAlert, Loader2 } from "lucide-react";
 import { useWorkspace } from "@/stores/workspace";
 import { useSettings } from "@/stores/settings";
 import { useUi, type NoteMode } from "@/stores/ui";
 import { basename } from "@/lib/paths";
+import { extractHeadings } from "@/lib/headings";
+import { propText, splitFrontmatter } from "@/lib/frontmatter";
+import { UnlinkedMentions } from "./UnlinkedMentions";
 import { MarkdownEditor } from "./MarkdownEditor";
 import { Preview } from "./Preview";
 import { Squiggle } from "@/components/doodles";
@@ -31,6 +34,21 @@ export function NotePane({ path }: { path: string }) {
   const setMode = useUi((s) => s.setNoteMode);
   const openNote = useUi((s) => s.openNote);
   const setView = useUi((s) => s.setView);
+
+  const pending = useUi((s) => s.pendingHeading);
+  const [jump, setJump] = useState<{ line: number; nonce: number } | null>(null);
+  const previewRef = useRef<HTMLElement>(null);
+  const noteContent = note?.content;
+  // Opened through [[note#Section]]: scroll the preview and put the editor cursor on that heading.
+  useEffect(() => {
+    if (!pending || noteContent === undefined) return;
+    const h = extractHeadings(noteContent).find((x) => x.slug === pending);
+    if (h) setJump({ line: h.line, nonce: Date.now() });
+    requestAnimationFrame(() => previewRef.current?.querySelector(`[data-heading="${CSS.escape(pending)}"]`)?.scrollIntoView({ block: "start" }));
+    useUi.getState().setPendingHeading(null);
+  }, [pending, noteContent]);
+
+  const props = useMemo(() => (noteContent ? Object.entries(splitFrontmatter(noteContent).data).filter(([, v]) => (Array.isArray(v) ? v.length : v !== "")) : []), [noteContent]);
 
   const options = useMemo(() => ({ lineNumbers: editor.lineNumbers, wordWrap: editor.wordWrap, fontSize: editor.fontSize }), [editor.lineNumbers, editor.wordWrap, editor.fontSize]);
 
@@ -72,16 +90,24 @@ export function NotePane({ path }: { path: string }) {
         </div>
       )}
 
+      {props.length > 0 && (
+        <div className="props-bar" aria-label="Properties">
+          {props.map(([k, v]) => (
+            <span key={k} className="chip" data-tip={k}><b>{k}:</b> {propText(v)}</span>
+          ))}
+        </div>
+      )}
+
       <div className="note-body" data-mode={mode}>
         {mode !== "preview" && (
           <section className="note-editor-wrap" aria-label="Editor">
-            <MarkdownEditor docKey={path} value={note.content} revision={note.revision} onChange={(v) => setContent(path, v)} options={options} autoFocus />
+            <MarkdownEditor docKey={path} value={note.content} revision={note.revision} onChange={(v) => setContent(path, v)} options={options} autoFocus scrollToLine={jump} />
           </section>
         )}
         {mode !== "edit" && (
-          <section className="note-preview-wrap" aria-label="Preview">
+          <section ref={previewRef} className="note-preview-wrap" aria-label="Preview">
             {note.content.trim() ? (
-              <Preview path={path} content={note.content} />
+              <Preview path={path} content={note.content} embeds />
             ) : (
               <div className="empty"><Squiggle style={{ color: "var(--amber)" }} /><p className="hand">Nothing here yet.</p><p>Start typing in the editor.</p></div>
             )}
@@ -103,6 +129,7 @@ export function NotePane({ path }: { path: string }) {
           <p className="m-0 mt-1" style={{ color: "var(--ink-faint)" }}>No other note links here yet. Use [[{basename(path).replace(/\.md$/i, "")}]] from another note.</p>
         )}
       </div>
+      <UnlinkedMentions path={path} />
     </div>
   );
 }

@@ -192,3 +192,95 @@ describe("planLinkUpdates", () => {
     expect(planLinkUpdates({ "a.md": "[[b]]", "b.md": "" }, [["b.md", "sub/b.md"]]).total).toBe(0);
   });
 });
+
+import { extractHeadings, sectionOf, slugHeading } from "./headings";
+import { splitFrontmatter } from "./frontmatter";
+import { extractTasks } from "./tasks";
+import { findMention, linkFirstMention } from "./mentions";
+import { applyTemplate, collectTemplates } from "./templates";
+
+describe("headings", () => {
+  const doc = "---\n# not a heading\n---\n# Top\ntext\n## Part *A*\na\n```\n# code\n```\n### Deep\nd\n## Part B\nb\n";
+  it("lists headings outside code and frontmatter", () => {
+    expect(extractHeadings(doc).map((h) => [h.level, h.text, h.slug])).toEqual([
+      [1, "Top", "top"], [2, "Part *A*", "part-a"], [3, "Deep", "deep"], [2, "Part B", "part-b"],
+    ]);
+    expect(slugHeading("Olá, Mundo! (2)")).toBe("olá-mundo-2");
+  });
+  it("extracts a section up to the next heading of the same level", () => {
+    expect(sectionOf(doc, "Part A")).toBe("a\n```\n# code\n```\n### Deep\nd");
+    expect(sectionOf(doc, "part b")).toBe("b");
+    expect(sectionOf(doc, "nope")).toBeNull();
+  });
+});
+
+describe("frontmatter", () => {
+  it("parses scalars, inline lists and dash lists", () => {
+    const f = splitFrontmatter('---\nstatus: done\ntags: [a, "b c"]\nauthors:\n  - Ana\n  - Bo\nempty:\n---\n# Body\n');
+    expect(f.data).toEqual({ status: "done", tags: ["a", "b c"], authors: ["Ana", "Bo"], empty: "" });
+    expect(f.body).toBe("# Body\n");
+    expect(splitFrontmatter("# x").hasFrontmatter).toBe(false);
+  });
+});
+
+describe("tasks", () => {
+  it("numbers checkboxes the way toggleCheckbox does", () => {
+    const c = "- [ ] one\n```\n- [ ] code\n```\n  - [x] two\n> - [ ] three\n";
+    const t = extractTasks(c);
+    expect(t.map((x) => [x.index, x.text, x.done])).toEqual([[0, "one", false], [1, "two", true], [2, "three", false]]);
+    expect(toggleCheckbox(c, 1)).toContain("  - [ ] two");
+  });
+});
+
+describe("mentions", () => {
+  it("finds plain mentions only, not links or code", () => {
+    expect(findMention("see [[Alpha]] and `Alpha` and [Alpha](x.md)", ["Alpha"])).toBeNull();
+    expect(findMention("an Alphabet of alpha beta", ["Alpha"])?.text).toBe("alpha");
+  });
+  it("links the first mention keeping the original text as alias", () => {
+    expect(linkFirstMention("we met alpha today", ["Alpha"], "Alpha")).toBe("we met [[Alpha|alpha]] today");
+    expect(linkFirstMention("Alpha rules", ["Alpha"], "Alpha")).toBe("[[Alpha]] rules");
+  });
+});
+
+describe("templates", () => {
+  it("fills variables and leaves unknown ones", () => {
+    const d = new Date(2026, 0, 5, 9, 7);
+    expect(applyTemplate("# {{title}} {{date}} {{ time }} {{x}}", "Plan", d)).toBe("# Plan 2026-01-05 09:07 {{x}}");
+  });
+  it("lists workspace templates before built-ins", () => {
+    const t = collectTemplates({ "templates/Weekly.md": { content: "w" }, "a.md": { content: "" } });
+    expect(t[0]).toMatchObject({ name: "Weekly", path: "templates/Weekly.md" });
+    expect(t.length).toBe(4);
+  });
+});
+
+describe("embeds and heading links", () => {
+  const notes: Record<string, string> = {
+    "a.md": "# A\n\n![[b]]\n\n![[c#Part]]\n\n[[b#Intro|see b]]\n",
+    "b.md": "---\nk: v\n---\n# B\n\nbody of b\n\n![[a]]\n",
+    "c.md": "# C\n\n## Part\n\nonly this\n\n## Other\n\nnot this\n",
+  };
+  const embed = (t: string) => (notes[`${t}.md`] ? { path: `${t}.md`, content: notes[`${t}.md`]! } : null);
+  const html = renderMarkdown(notes["a.md"]!, { notePath: "a.md", embed });
+
+  it("expands embeds, honours sections and survives cycles", () => {
+    expect(html).toContain('class="embed"');
+    expect(html).toContain("body of b");
+    expect(html).not.toContain("k: v");
+    expect(html).toContain("only this");
+    expect(html).not.toContain("not this");
+    // b embeds a, which would embed b again: the cycle stops instead of looping.
+    expect((html.match(/class="embed"/g) ?? []).length).toBeLessThan(6);
+  });
+
+  it("keeps the heading on wiki links and tags headings", () => {
+    expect(html).toContain('data-wiki="b"');
+    expect(html).toContain('data-heading-target="Intro"');
+    expect(html).toContain('data-heading="a"');
+  });
+
+  it("renders embeds as links when no resolver is given", () => {
+    expect(renderMarkdown("![[b]]", { notePath: "x.md" })).toContain("↪ b");
+  });
+});

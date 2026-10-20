@@ -3,7 +3,7 @@ import { create } from "zustand";
 export type SidebarTab = "notes" | "tags" | "files" | "explore";
 export type MainView = "board" | "graph" | "note";
 export type NoteMode = "edit" | "preview" | "split";
-export type DialogName = "palette" | "search" | "shortcuts" | "settings" | "about" | "trash" | null;
+export type DialogName = "palette" | "search" | "shortcuts" | "settings" | "about" | "trash" | "templates" | "tasks" | "properties" | "health" | null;
 
 export interface Toast {
   id: number;
@@ -50,6 +50,8 @@ interface UiState {
   noteMode: NoteMode;
   dialog: DialogName;
   settingsSection: string;
+  /** Section slug to scroll to after opening a note through a [[note#section]] link. */
+  pendingHeading: string | null;
   tagFilter: string | null;
   editingCard: string | null;
   renamingCard: string | null;
@@ -66,6 +68,7 @@ interface UiState {
   setNoteMode: (m: NoteMode) => void;
   setDialog: (d: DialogName) => void;
   openSettings: (section: string) => void;
+  setPendingHeading: (h: string | null) => void;
   setTagFilter: (t: string | null) => void;
   setEditingCard: (p: string | null) => void;
   setRenamingCard: (p: string | null) => void;
@@ -89,6 +92,7 @@ export const useUi = create<UiState>((set, get) => ({
   noteMode: "split",
   dialog: null,
   settingsSection: "Appearance",
+  pendingHeading: null,
   tagFilter: null,
   editingCard: null,
   renamingCard: null,
@@ -105,6 +109,7 @@ export const useUi = create<UiState>((set, get) => ({
   setNoteMode: (noteMode) => set({ noteMode }),
   setDialog: (dialog) => set({ dialog }),
   openSettings: (settingsSection) => set({ settingsSection, dialog: "settings" }),
+  setPendingHeading: (pendingHeading) => set({ pendingHeading }),
   setTagFilter: (tagFilter) => set({ tagFilter }),
   setEditingCard: (editingCard) => set({ editingCard }),
   setRenamingCard: (renamingCard) => set({ renamingCard }),
